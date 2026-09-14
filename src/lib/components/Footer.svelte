@@ -72,7 +72,7 @@
 
 			<a
 				class="underline"
-				href="https://github.com/kenjonespizza/birdables.com"
+				href="https://github.com/pelikenjones/birdables.com"
 			>View open sourced code</a>
 		</p>
 	</div>
