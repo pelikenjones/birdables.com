@@ -1,7 +1,7 @@
 <script>
 	import { asset } from '$app/paths';
 	import SEO from 'svelte-seo';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto, preloadData } from '$app/navigation';
 
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
@@ -27,16 +27,91 @@
 		isModalOpen = !isModalOpen;
 	}
 
+	// Touches this close to the screen edge belong to the browser's back/forward gesture.
+	const SWIPE_EDGE_ZONE = 24;
+	const SWIPE_PRELOAD_DISTANCE = 20;
+	const SWIPE_MIN_DISTANCE = 60;
+	const SWIPE_MAX_DURATION = 600;
+
+	let swipe = null;
+
+	let cardImage = $state();
+	let widget = $state();
+	let widgetOnLeft = $state(false);
+
+	function updateWidgetSide() {
+		if (!cardImage || !widget) return;
+		const card = cardImage.getBoundingClientRect();
+		// Only left/right changes between sides, so the widget's current top and width apply to either side.
+		const nav = widget.getBoundingClientRect();
+		widgetOnLeft = card.bottom + 16 <= nav.top || card.left >= nav.width + 16;
+	}
+
+	afterNavigate(updateWidgetSide);
+
+	function goToBird(slug) {
+		goto(resolve('/bird/[slug]', { slug }));
+	}
+
+	function isHorizontal(dx, dy, minDistance) {
+		return Math.abs(dx) >= minDistance && Math.abs(dx) >= Math.abs(dy) * 2;
+	}
+
 	function handleKeydown(e) {
 		if (e.key === 'Escape' && isModalOpen) {
 			toggleModal();
 			return;
 		}
+		if (e.defaultPrevented || e.repeat || e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return;
+		if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+
 		if (e.key === 'ArrowLeft' && prevSlug) {
-			goto(resolve('/bird/[slug]', { slug: prevSlug }));
+			goToBird(prevSlug);
 		} else if (e.key === 'ArrowRight' && nextSlug) {
-			goto(resolve('/bird/[slug]', { slug: nextSlug }));
+			goToBird(nextSlug);
 		}
+	}
+
+	function handleTouchStart(e) {
+		const touch = e.touches[0];
+		const nearEdge =
+			touch.clientX < SWIPE_EDGE_ZONE || touch.clientX > window.innerWidth - SWIPE_EDGE_ZONE;
+		swipe =
+			e.touches.length === 1 && !nearEdge
+				? { x: touch.clientX, y: touch.clientY, time: e.timeStamp, preloaded: false }
+				: null;
+	}
+
+	function handleTouchMove(e) {
+		if (!swipe || swipe.preloaded) return;
+		const dx = e.touches[0].clientX - swipe.x;
+		const dy = e.touches[0].clientY - swipe.y;
+		if (!isHorizontal(dx, dy, SWIPE_PRELOAD_DISTANCE)) return;
+
+		swipe.preloaded = true;
+		const slug = dx < 0 ? nextSlug : prevSlug;
+		if (slug) preloadData(resolve('/bird/[slug]', { slug }));
+	}
+
+	function handleTouchEnd(e) {
+		if (!swipe) return;
+		const { x, y, time } = swipe;
+		swipe = null;
+
+		const touch = e.changedTouches[0];
+		const dx = touch.clientX - x;
+		const dy = touch.clientY - y;
+		if (
+			e.timeStamp - time > SWIPE_MAX_DURATION ||
+			window.getSelection()?.toString() ||
+			window.visualViewport?.scale > 1 ||
+			!isHorizontal(dx, dy, SWIPE_MIN_DISTANCE)
+		) {
+			return;
+		}
+
+		const slug = dx < 0 ? nextSlug : prevSlug;
+		if (slug) goToBird(slug);
 	}
 </script>
 
@@ -75,7 +150,15 @@
 	}}
 />
 
-<svelte:window onkeydown={handleKeydown}></svelte:window>
+<svelte:window
+	onkeydown={handleKeydown}
+	onscroll={updateWidgetSide}
+	onresize={updateWidgetSide}
+	ontouchstart={handleTouchStart}
+	ontouchmove={handleTouchMove}
+	ontouchend={handleTouchEnd}
+	ontouchcancel={() => (swipe = null)}
+></svelte:window>
 
 <div class="bg-gray-blue">
 	<div class="mx-auto pt-10 pb-16 px-4 sm:px-6 lg:max-w-7xl lg:px-8">
@@ -88,6 +171,7 @@
 				class="md:row-end-1 md:col-span-4 rounded-3xl transition hover:ring-3 hover:ring-offset-3 hover:ring-offset-gray-blue hover:ring-gray-900 focus:outline-none focus:ring-3 focus:ring-offset-3 focus:ring-offset-gray-blue focus:ring-gray-900"
 			>
 				<img
+					bind:this={cardImage}
 					src={asset(`images/cards/${bird.friendlyId}.webp`)}
 					alt={`${bird.birdName} card`}
 					class="object-center object-cover drop-shadow-card hidden md:block"
@@ -121,6 +205,40 @@
 							</div>
 						</div>
 					</div>
+
+					{#if prevSlug || nextSlug}
+						<nav aria-label="Bird cards" class="lg:hidden mt-4">
+							<div class="grid grid-cols-2 gap-3">
+								{#if prevSlug}
+									<a
+										href={resolve('/bird/[slug]', { slug: prevSlug })}
+										data-sveltekit-preload-data
+										class="min-h-11 min-w-0 flex items-center gap-2 rounded-full bg-white px-4 py-2 text-left transition hover:ring-3 hover:ring-offset-3 hover:ring-offset-gray-blue hover:ring-gray-500 focus:outline-none focus:ring-3 focus:ring-offset-3 focus:ring-offset-gray-blue focus:ring-gray-500"
+									>
+										<span aria-hidden="true" class="text-gray-600">←</span>
+										<span class="min-w-0 flex flex-col leading-tight">
+											<span class="text-xs text-gray-500">Previous</span>
+											<span class="truncate text-sm font-semibold text-gray-900">{prevBirdName}</span>
+										</span>
+									</a>
+								{/if}
+								{#if nextSlug}
+									<a
+										href={resolve('/bird/[slug]', { slug: nextSlug })}
+										data-sveltekit-preload-data
+										class="col-start-2 min-h-11 min-w-0 flex items-center justify-end gap-2 rounded-full bg-white px-4 py-2 text-right transition hover:ring-3 hover:ring-offset-3 hover:ring-offset-gray-blue hover:ring-gray-500 focus:outline-none focus:ring-3 focus:ring-offset-3 focus:ring-offset-gray-blue focus:ring-gray-500"
+									>
+										<span class="min-w-0 flex flex-col leading-tight">
+											<span class="text-xs text-gray-500">Next</span>
+											<span class="truncate text-sm font-semibold text-gray-900">{nextBirdName}</span>
+										</span>
+										<span aria-hidden="true" class="text-gray-600">→</span>
+									</a>
+								{/if}
+							</div>
+							<p aria-hidden="true" class="mt-2 text-center text-xs text-gray-500">or swipe</p>
+						</nav>
+					{/if}
 
 					<button
 						onclick={toggleModal}
@@ -315,15 +433,22 @@
 
 {#if prevSlug || nextSlug}
 	<nav
-		class="hidden lg:block z-10 fixed right-0 bottom-4 rounded-tl-2xl rounded-bl-2xl bg-white drop-shadow-card overflow-hidden"
+		bind:this={widget}
+		aria-label="Bird cards"
+		class={[
+			'hidden lg:block z-10 fixed bottom-4 bg-white drop-shadow-card overflow-hidden',
+			widgetOnLeft ? 'left-0 rounded-r-2xl' : 'right-0 rounded-l-2xl'
+		]}
 	>
 		{#if nextSlug}
 			<a
 				href={resolve('/bird/[slug]', { slug: nextSlug })}
 				data-sveltekit-preload-data
+				aria-keyshortcuts="ArrowRight"
 				class="text-xs font-semibold text-gray-600 flex items-center space-x-3 border-b border-gray-900/10 py-3 px-6 transition hover:bg-gray-blue/50"
 			>
 				<kbd
+					aria-hidden="true"
 					class="inline-flex items-center justify-center h-6 w-6 rounded border border-gray-300 bg-gray-50 text-sm font-semibold shadow-[0_1px_0_rgba(0,0,0,0.15)]"
 					>→</kbd
 				>
@@ -334,9 +459,11 @@
 			<a
 				href={resolve('/bird/[slug]', { slug: prevSlug })}
 				data-sveltekit-preload-data
+				aria-keyshortcuts="ArrowLeft"
 				class="text-xs font-semibold text-gray-600 flex items-center space-x-3 py-3 px-6 transition hover:bg-gray-blue/50"
 			>
 				<kbd
+					aria-hidden="true"
 					class="inline-flex items-center justify-center h-6 w-6 rounded border border-gray-300 bg-gray-50 text-sm font-semibold shadow-[0_1px_0_rgba(0,0,0,0.15)]"
 					>←</kbd
 				>
