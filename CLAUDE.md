@@ -83,8 +83,25 @@ Root `.env`. `PUBLIC_*` reaches the browser; unprefixed is server-only.
 `astro.config.mjs` runs before Astro loads `.env`, so it reads vars with Vite's
 `loadEnv`; everywhere else uses `import.meta.env.PUBLIC_*`.
 
-The **Studio does not read `.env`** — its project id and dataset are in
-`studio/sanity.project.ts`. See that file for why.
+The **Studio does not read the root `.env`** — Sanity's bundler only reads `.env`
+from the Studio's own directory and only exposes the `SANITY_STUDIO_*` prefix. So
+there are two env files, not one:
+
+- **Root `.env`** — nine vars, all listed in `.env.example`. `SANITY_WRITE_TOKEN`
+  is not a build input (the static build reads the CDN unauthenticated) but it IS
+  a runtime dependency of all three `/api` routes via `sanityWrite.ts`; unset, they
+  answer 503. It must be set on Vercel.
+- **`studio/.env`** — two vars, `SANITY_STUDIO_MEDIA_ENDPOINT` and
+  `SANITY_STUDIO_MEDIA_SECRET`, both only for the "Fetch media" button. The secret
+  must equal the root's `MEDIA_FETCH_SECRET`; set one and not the other and the
+  button answers 401. The endpoint defaults to `localhost:4321`, so a deployed
+  Studio with it unset posts at whoever clicked the button. See
+  `studio/.env.example`.
+
+The Studio's project id and dataset are not env vars at all — they are public and
+live in `studio/sanity.project.ts`. See that file for why.
+
+`XENO_CANTO_API_KEY` stays empty on purpose; see the media section above.
 
 ---
 
@@ -186,12 +203,12 @@ and `:focus-visible` present. Not yet driven by hand in a browser.
 
 ## Not done
 
-- **Nothing is committed.** 353 paths staged on the branch, zero commits.
 - **Keyboard pass by hand** — the static audit is clean (see above) but nobody has
   actually tabbed through the drawer, accordion, modals and card viewer.
-- **Never deployed.** Vercel needs `SANITY_WRITE_TOKEN`, `MEDIA_FETCH_SECRET`, and
-  Resend's keys for signups. Also: `*.vercel.app` is not on the Sanity CORS
-  allow-list, so 3D textures will 403 on preview deploys.
+- **Never deployed.** Vercel needs `SANITY_WRITE_TOKEN`, `MEDIA_FETCH_SECRET` and
+  Resend's keys; a deployed Studio additionally needs its own two (above). Sanity
+  CORS is done — `https://*.vercel.app` was added 2026-09-17, alongside
+  `localhost:3333`, `localhost:4321` and `https://www.birdables.com`.
 - **`_legacy/` still present** — delete once nothing else needs porting.
 - **Bingo / life list** deferred by Ken. eBird has no OAuth and no third-party access
   to a user's life list; the buildable shapes are manual ticking and a CSV import,

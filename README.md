@@ -15,10 +15,15 @@ _legacy/          The v1 SvelteKit app. Porting reference only; deleted before m
 
 ```sh
 pnpm install
-cp .env.example .env     # values are already correct; add tokens if you need them
-pnpm dev                 # site on :4321
-pnpm studio              # Studio on :3333
+cp .env.example .env                    # ids are already correct; add tokens as needed
+cp studio/.env.example studio/.env      # only needed for the "Fetch media" button
+pnpm dev                                # site on :4321
+pnpm studio                             # Studio on :3333
 ```
+
+Two env files, because Sanity's bundler only reads `.env` from the Studio's own
+directory. `SANITY_STUDIO_MEDIA_SECRET` in `studio/.env` must match
+`MEDIA_FETCH_SECRET` in the root one; both files explain themselves.
 
 ## Scripts
 

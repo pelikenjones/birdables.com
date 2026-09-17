@@ -1,2 +1,11 @@
 dist
 node_modules
+.sanity
+
+# The Studio's own env file. It holds the shared secret for /api/fetch-media,
+# which must match MEDIA_FETCH_SECRET in the repo-root .env.
+# The root .gitignore's patterns happen to match this path too — this is here so
+# it survives those patterns being anchored to the root later.
+.env
+.env.*
+!.env.example
