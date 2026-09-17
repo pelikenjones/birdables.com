@@ -1,0 +1,94 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Homepage"
+    },
+    {
+      "id": "page-2",
+      "name": "Bolder explorations"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "page": "page-1",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 13600,
+      "title": "Homepage — dark (default)",
+      "print": "flow"
+    },
+    {
+      "file": "Light.dc.html",
+      "page": "page-1",
+      "x": 1660,
+      "y": 0,
+      "w": 1440,
+      "h": 13600,
+      "title": "Homepage — light mode",
+      "print": "flow"
+    },
+    {
+      "file": "Plate.dc.html",
+      "page": "page-2",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 4260,
+      "title": "A — Plate · engraved specimen",
+      "print": "flow"
+    },
+    {
+      "file": "Drop.dc.html",
+      "page": "page-2",
+      "x": 1600,
+      "y": 0,
+      "w": 1440,
+      "h": 4720,
+      "title": "B — Drop · brutalist poster",
+      "print": "flow"
+    },
+    {
+      "file": "Vitrine.dc.html",
+      "page": "page-2",
+      "x": 3200,
+      "y": 0,
+      "w": 1440,
+      "h": 4180,
+      "title": "C — Vitrine · collector’s case",
+      "print": "flow"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "homepage-dark",
+      "page": "page-1",
+      "x": 0,
+      "y": -250,
+      "w": 520,
+      "text": "HOMEPAGE — dark by default\nOne direction, two modes: the nav carries a sun/moon toggle and the light twin is the artboard to the right.\nThis revision: deeper charcoal (#0C1217, down from the soft #11191E), the marquee band removed entirely, and no orange buttons anywhere — orange is now only section numbers, the rarity bars, the life-list ticks and a few hairlines.\nSections 05, 06, 07 and 08 are new ideas, not things the site does today — they are labelled \"new idea\" on the page so nothing reads as a promise."
+    },
+    {
+      "id": "homepage-light",
+      "page": "page-1",
+      "x": 1660,
+      "y": -250,
+      "w": 520,
+      "text": "HOMEPAGE — light mode\nThe same page and the same components with the light theme applied. The rarity bars use a separate validated orange ramp, because the dark ramp would wash out on white."
+    },
+    {
+      "id": "bolder-explorations",
+      "page": "page-2",
+      "x": 0,
+      "y": -250,
+      "w": 520,
+      "text": "Three bolder explorations, parked here rather than deleted.\nWorth raiding for parts even though the homepage went a different way — the engraved index, the gapless contact sheet and the graded slabs would all drop into the main page."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
