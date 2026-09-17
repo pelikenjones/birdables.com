@@ -1,0 +1,285 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import CardArt from '~/components/CardArt.astro';
+import Stars from '~/components/ui/Stars.astro';
+import { cardsQuery } from '~/lib/queries';
+
+const cards = await sanityClient.fetch(cardsQuery);
+
+const SORTS = [
+	{ value: 'rarity-desc', label: 'Rarest first' },
+	{ value: 'rarity-asc', label: 'Most common first' },
+	{ value: 'name', label: 'Name A–Z' },
+	{ value: 'scans', label: 'Most scanned' },
+	{ value: 'newest', label: 'Newest first' }
+];
+
+// Sort keys are baked into the markup so reordering never needs the data again.
+const decorated = cards.map((card) => ({
+	card,
+	rarity: card.rarity ?? 0,
+	name: card.bird?.commonName ?? '',
+	scans: card.qrScans ?? 0,
+	released: card.releaseDate ?? ''
+}));
+const initial = [...decorated].sort((a, b) => b.rarity - a.rarity || a.name.localeCompare(b.name));
+---
+
+<BaseLayout
+	title="All cards — Birdables"
+	description="Every Birdables card. Twenty-one birds, each with a rarity, an edition cap and a QR code that opens the bird's page."
+>
+	<Nav />
+
+	<main id="main" class="mx-auto w-full max-w-[90rem] px-4 pb-24 pt-8 md:px-16">
+		<h1 class="text-52 font-black tracking-tightest md:text-74">The flock</h1>
+		<p class="mt-4 max-w-[38rem] text-18 leading-relaxed text-ink-dim">
+			{cards.length} birds so far. Every card carries a rarity, a cap on how many can ever exist
+			in its edition, and a QR code that opens the bird's page.
+		</p>
+
+		<div class="mt-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+			<fieldset class="m-0 border-0 p-0">
+				<legend class="mb-3 text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+					Filter by rarity
+				</legend>
+				<div class="flex flex-wrap gap-2.5">
+					{
+						[1, 2, 3, 4, 5].map((level) => (
+							<label class="rarity-filter">
+								<input type="checkbox" value={level} data-rarity />
+								<Stars value={level} size={13} gap={2} label={false} />
+								<span class="sr-only">Rarity {level}</span>
+							</label>
+						))
+					}
+				</div>
+			</fieldset>
+
+			<label class="flex items-center gap-3">
+				<span class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">Sort</span>
+				<select data-sort class="sort-select">
+					{SORTS.map((s) => <option value={s.value}>{s.label}</option>)}
+				</select>
+			</label>
+		</div>
+
+		<p class="sr-only" role="status" aria-live="polite" data-filter-status></p>
+
+		{/* The entrance is a CSS animation with a per-card delay, not a JS class
+		    toggle: a script that runs before first paint never gives the browser
+		    an initial state to transition from, which is why the two previous
+		    attempts did nothing at all. */}
+		<ul
+			class="mt-10 grid list-none grid-cols-2 gap-x-7 gap-y-12 p-0 sm:grid-cols-3 lg:grid-cols-4"
+			data-card-grid
+		>
+			{
+				initial.map(({ card, rarity, name, scans, released }, i) => (
+					<li
+						class="card-cell flex flex-col gap-2.5"
+						data-rarity={rarity}
+						data-name={name}
+						data-scans={scans}
+						data-released={released}
+						style={`--enter-delay:${Math.min(i, 14) * 55}ms`}
+					>
+						<a href={`/bird/${card.bird?.slug}`} class="no-underline">
+							{card.artwork?.asset && (
+								<CardArt
+									source={card.artwork.asset}
+									alt={`${card.bird?.commonName} card`}
+									width={420}
+									aspectRatio={card.artwork.asset.aspectRatio}
+									class="card-radius h-auto w-full drop-shadow-card"
+								/>
+							)}
+							<span class="mt-3.5 block text-17 font-semibold">{card.bird?.commonName}</span>
+						</a>
+						<Stars value={rarity} size={13} gap={2} />
+					</li>
+				))
+			}
+		</ul>
+
+		<p class="mt-14 hidden text-17 text-ink-dim" data-empty>
+			No cards at that rarity. Try another.
+		</p>
+	</main>
+
+	<Footer />
+</BaseLayout>
+
+<style>
+	@keyframes card-in {
+		from {
+			opacity: 0;
+			transform: translateY(26px) scale(0.96);
+		}
+	}
+	.card-cell {
+		/* `both` holds the from-state before the delay elapses, so the card is
+		   hidden from the very first paint without any JS. */
+		animation: card-in 620ms cubic-bezier(0.22, 1, 0.36, 1) var(--enter-delay, 0ms) both;
+		transition:
+			opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+			transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	.card-cell[hidden] {
+		display: none;
+	}
+	.card-cell.leaving {
+		opacity: 0;
+		transform: scale(0.92);
+		pointer-events: none;
+	}
+	.card-cell img {
+		transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	.card-cell a:hover img {
+		transform: translateY(-6px) scale(1.02);
+	}
+
+	.rarity-filter {
+		display: inline-flex;
+		cursor: pointer;
+		align-items: center;
+		gap: 0.5rem;
+		border-radius: 999px;
+		border: 1px solid var(--rule);
+		padding: 0.5rem 0.875rem;
+		color: var(--ink-faint);
+		transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+	}
+	.rarity-filter:hover {
+		border-color: var(--ink-faint);
+		color: var(--ink);
+	}
+	.rarity-filter input {
+		width: 0.875rem;
+		height: 0.875rem;
+		cursor: pointer;
+		accent-color: var(--accent-ink);
+	}
+	.rarity-filter:has(input:checked) {
+		border-color: var(--ink);
+		background: color-mix(in oklab, var(--ink) 6%, transparent);
+		color: var(--ink);
+	}
+	.rarity-filter:has(input:focus-visible) {
+		outline: 2px solid var(--color-beak-600);
+		outline-offset: 2px;
+	}
+
+	.sort-select {
+		cursor: pointer;
+		border-radius: 999px;
+		border: 1px solid var(--rule);
+		background: var(--surface);
+		padding: 0.625rem 1rem;
+		font: inherit;
+		font-size: var(--text-15);
+		color: var(--ink);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.card-cell,
+		.card-cell img {
+			animation: none;
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	const grid = document.querySelector<HTMLElement>('[data-card-grid]');
+	const status = document.querySelector<HTMLElement>('[data-filter-status]');
+	const empty = document.querySelector<HTMLElement>('[data-empty]');
+	const sortSelect = document.querySelector<HTMLSelectElement>('[data-sort]');
+	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	if (grid) {
+		const cells = Array.from(grid.querySelectorAll<HTMLElement>('.card-cell'));
+		const num = (el: HTMLElement, key: string) => Number(el.dataset[key] ?? 0);
+
+		const comparators: Record<string, (a: HTMLElement, b: HTMLElement) => number> = {
+			'rarity-desc': (a, b) => num(b, 'rarity') - num(a, 'rarity') || a.dataset.name!.localeCompare(b.dataset.name!),
+			'rarity-asc': (a, b) => num(a, 'rarity') - num(b, 'rarity') || a.dataset.name!.localeCompare(b.dataset.name!),
+			name: (a, b) => a.dataset.name!.localeCompare(b.dataset.name!),
+			scans: (a, b) => num(b, 'scans') - num(a, 'scans'),
+			newest: (a, b) => (b.dataset.released ?? '').localeCompare(a.dataset.released ?? '')
+		};
+
+		const positions = () => new Map(cells.map((c) => [c, c.getBoundingClientRect()]));
+
+		function apply() {
+			const checked = Array.from(
+				document.querySelectorAll<HTMLInputElement>('[data-rarity]:checked')
+			).map((i) => i.value);
+
+			// No boxes ticked reads as "everything", not "nothing".
+			const matches = (cell: HTMLElement) =>
+				checked.length === 0 || checked.includes(cell.dataset.rarity!);
+
+			const before = positions();
+			const wasVisible = new Set(cells.filter((c) => !c.hidden));
+
+			const order = [...cells].sort(comparators[sortSelect?.value ?? 'rarity-desc']);
+			order.forEach((cell, i) => {
+				// CSS order reflows the grid without touching the DOM, which keeps
+				// the FLIP measurements honest.
+				cell.style.order = String(i);
+				cell.hidden = !matches(cell);
+			});
+
+			const shown = cells.filter((c) => !c.hidden).length;
+			if (status) status.textContent = `${shown} cards shown`;
+			if (empty) empty.hidden = shown > 0;
+
+			if (reduced) return;
+
+			const after = positions();
+			let arriving = 0;
+
+			for (const cell of cells) {
+				if (cell.hidden) continue;
+				// The entrance animation must not fight the FLIP transform.
+				cell.style.animation = 'none';
+
+				const from = before.get(cell)!;
+				const to = after.get(cell)!;
+
+				if (wasVisible.has(cell)) {
+					const dx = from.left - to.left;
+					const dy = from.top - to.top;
+					if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+						cell.style.transition = 'none';
+						cell.style.transform = `translate(${dx}px, ${dy}px)`;
+					}
+				} else {
+					cell.style.transition = 'none';
+					cell.style.opacity = '0';
+					cell.style.transform = 'translateY(22px) scale(0.95)';
+					cell.style.transitionDelay = `${Math.min(arriving++, 10) * 45}ms`;
+				}
+			}
+
+			requestAnimationFrame(() => {
+				for (const cell of cells) {
+					if (cell.hidden) continue;
+					cell.style.transition = '';
+					cell.style.transform = '';
+					cell.style.opacity = '';
+				}
+			});
+		}
+
+		for (const box of document.querySelectorAll('[data-rarity]')) {
+			box.addEventListener('change', apply);
+		}
+		sortSelect?.addEventListener('change', apply);
+	}
+</script>

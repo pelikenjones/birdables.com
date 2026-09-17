@@ -1,0 +1,118 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import Button from '~/components/ui/Button.astro';
+import Stars from '~/components/ui/Stars.astro';
+import CardViewer from '~/components/bird/CardViewerThree.astro';
+import { formatCount } from '~/lib/utils';
+import { cardBySlugQuery, rarityTiersQuery } from '~/lib/queries';
+
+export async function getStaticPaths() {
+	const { sanityClient } = await import('sanity:client');
+	const { cardSlugsQuery } = await import('~/lib/queries');
+	const slugs = await sanityClient.fetch(cardSlugsQuery);
+	return slugs.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const [card, tiers] = await Promise.all([
+	sanityClient.fetch(cardBySlugQuery, { slug: slug! }),
+	sanityClient.fetch(rarityTiersQuery)
+]);
+
+if (!card) return Astro.rewrite('/404');
+const tier = tiers.find((t) => t.level === card.rarity);
+
+const rows = [
+	['Edition', card.edition],
+	['Rarity', `${card.rarity} of 5`],
+	['Edition cap', tier?.maxPhysical ? `${formatCount(tier.maxPhysical)} physical` : null],
+	['Digital cap', tier?.maxDigital ? String(tier.maxDigital) : null],
+	['Released', card.releaseDate],
+	['Scans', card.qrScans != null ? formatCount(card.qrScans) : null],
+	['Availability', card.availability === 'packOnly' ? 'Only in a pack' : 'Sold individually'],
+	['Accent', card.accentColor]
+].filter(([, v]) => v) as [string, string][];
+---
+
+<BaseLayout
+	title={`${card.smallName} ${card.bigName} card — Birdables`}
+	description={`The ${card.bird?.commonName} card, edition ${card.edition}.`}
+	image={card.artwork?.asset?.url ?? undefined}
+>
+	<Nav />
+
+	<main id="main" class="mx-auto w-full max-w-[90rem] px-4 pb-24 pt-5 md:px-16">
+		<a href="/cards" class="text-14 font-semibold text-ink-faint no-underline">← All cards</a>
+
+		<div class="mt-6 flex flex-col items-start gap-16 lg:flex-row">
+			<div class="w-full shrink-0 lg:w-[34rem]">
+				{card.artwork?.asset && (
+					<CardViewer
+						source={card.artwork.asset}
+						alt={`${card.bird?.commonName} card, edition ${card.edition}`}
+						lqip={card.artwork.asset.lqip}
+						aspectRatio={card.artwork.asset.aspectRatio}
+					/>
+				)}
+			</div>
+
+			<div class="flex flex-1 flex-col items-start pt-3">
+				<div class="flex flex-wrap items-center gap-2.5">
+					{card.specialty === 'specialty' && (
+						<span class="rounded-full bg-beak-600 px-3.5 py-1.5 text-12 font-semibold uppercase tracking-eyebrow text-white">
+							Specialty
+						</span>
+					)}
+					<span class="rounded-full border border-gray-200 px-3.5 py-1.5 text-12 font-semibold uppercase tracking-eyebrow text-ink-dim">
+						Edition {card.edition}
+					</span>
+				</div>
+
+				<h1 class="mt-5 flex flex-col">
+					<span class="text-26 font-medium leading-none text-ink-dim">{card.smallName}</span>
+					<span class="text-52 font-black leading-[0.95] tracking-tightest md:text-74">
+						{card.bigName}
+					</span>
+				</h1>
+				<a
+					href={`/bird/${card.bird?.slug}`}
+					class="mt-3 text-18 italic text-ink-dim underline underline-offset-[3px]"
+				>
+					{card.bird?.scientificName} — see the bird
+				</a>
+
+				<div class="mt-7 flex w-full items-center gap-4 rounded-[1.25rem] bg-panel p-[1.125rem]">
+					<Stars value={card.rarity ?? 1} size={20} gap={5} />
+					<div class="flex flex-col gap-0.5">
+						<span class="text-16 font-semibold">Rarity {card.rarity} of 5</span>
+						<span class="text-14 text-ink-dim">{tier?.label}</span>
+					</div>
+					<span
+						class="ml-auto hidden h-3 w-14 rounded sm:block"
+						style={`background: var(--rank-${card.rarity})`}
+						aria-hidden="true"></span>
+				</div>
+
+				<dl class="mt-7 w-full">
+					{rows.map(([k, v]) => (
+						<div class="flex items-baseline justify-between gap-6 border-t border-rule py-4">
+							<dt class="text-15 text-ink-dim">{k}</dt>
+							<dd class="text-17 font-semibold tabular-nums">{v}</dd>
+						</div>
+					))}
+					<div class="border-t border-rule"></div>
+				</dl>
+
+				<div class="mt-8 flex flex-wrap items-center gap-3.5">
+					{card.openseaUrl && <Button href={card.openseaUrl}>View on OpenSea</Button>}
+					<span class="text-14 text-ink-faint">Physical cards are no longer for sale</span>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<Footer />
+</BaseLayout>
