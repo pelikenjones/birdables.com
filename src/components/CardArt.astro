@@ -1,0 +1,53 @@
+---
+import { buildSrcSet, urlFor, lqipStyle, DEFAULT_WIDTHS } from '~/lib/image';
+import type { SanityImageSource } from '@sanity/image-url';
+
+interface Props {
+	source: SanityImageSource;
+	alt: string;
+	/**
+	 * Base64 blur placeholder. Worth it for images visible during load; skip it
+	 * for long lazy-loaded grids, where it inlines kilobytes per image for a
+	 * blur nobody is on screen to see. The flock wall alone was 78kB of these.
+	 */
+	/** Rendered width in CSS pixels at the largest breakpoint. Drives `sizes`. */
+	width: number;
+	lqip?: string | null;
+	aspectRatio?: number | null;
+	class?: string;
+	loading?: 'lazy' | 'eager';
+	fetchpriority?: 'high' | 'auto';
+	style?: string;
+}
+
+const {
+	source,
+	alt,
+	width,
+	lqip,
+	aspectRatio,
+	class: className,
+	loading = 'lazy',
+	fetchpriority = 'auto',
+	style
+} = Astro.props;
+
+// Don't offer the browser candidates wider than the slot — shipping a 1600px
+// card into a 372px box is the easiest Lighthouse regression to introduce.
+const widths = DEFAULT_WIDTHS.filter((w) => w <= width * 2);
+const height = aspectRatio ? Math.round(width / aspectRatio) : undefined;
+---
+
+<img
+	src={urlFor(source).width(width).url()}
+	srcset={buildSrcSet(source, widths.length ? widths : [width])}
+	sizes={`(max-width: 768px) 60vw, ${width}px`}
+	alt={alt}
+	width={width}
+	height={height}
+	loading={loading}
+	decoding="async"
+	fetchpriority={fetchpriority}
+	class={className}
+	style={[lqipStyle(lqip), style].filter(Boolean).join(';')}
+/>

@@ -1,0 +1,101 @@
+---
+/**
+ * Minimal Portable Text renderer. The post schema only allows normal/h2/h3/
+ * blockquote blocks, bullet and numbered lists, and the standard marks — a
+ * dependency for that would be more code than this is.
+ */
+interface Span {
+	_key: string;
+	_type: string;
+	text?: string;
+	marks?: string[];
+}
+interface Block {
+	_key: string;
+	_type: string;
+	style?: string;
+	listItem?: string;
+	level?: number;
+	children?: Span[];
+	markDefs?: { _key: string; _type: string; href?: string }[];
+}
+
+const { value } = Astro.props as { value: Block[] | null | undefined };
+const blocks = (value ?? []).filter((b) => b._type === 'block');
+
+/** Consecutive list items of the same kind collapse into one <ul>/<ol>. */
+type Group = { list: string | null; blocks: Block[] };
+const groups: Group[] = [];
+for (const block of blocks) {
+	const list = block.listItem ?? null;
+	const last = groups.at(-1);
+	if (last && last.list === list && list) last.blocks.push(block);
+	else groups.push({ list, blocks: [block] });
+}
+
+const HEADING = {
+	h2: 'text-34 font-black tracking-tightest mt-14 mb-4',
+	h3: 'text-26 font-semibold mt-10 mb-3'
+};
+
+const escape = (s: string) =>
+	s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function renderSpans(block: Block): string {
+	return (block.children ?? [])
+		.map((span) => {
+			let html = escape(span.text ?? '');
+			for (const mark of span.marks ?? []) {
+				const def = block.markDefs?.find((d) => d._key === mark);
+				if (def?._type === 'link' && def.href) {
+					const external = /^https?:/.test(def.href);
+					html = `<a href="${escape(def.href)}" class="underline"${
+						external ? ' rel="noopener" target="_blank"' : ''
+					}>${html}</a>`;
+				} else if (mark === 'strong') html = `<strong class="font-semibold text-ink">${html}</strong>`;
+				else if (mark === 'em') html = `<em>${html}</em>`;
+				else if (mark === 'code') html = `<code class="rounded bg-panel px-1.5 py-0.5 text-16">${html}</code>`;
+			}
+			return html;
+		})
+		.join('');
+}
+---
+
+{
+	groups.map((group) =>
+		group.list ? (
+			group.list === 'number' ? (
+				<ol class="my-5 ml-6 list-decimal text-18 leading-relaxed text-ink-dim">
+					{group.blocks.map((b) => (
+						<li class="mb-2">
+							<Fragment set:html={renderSpans(b)} />
+						</li>
+					))}
+				</ol>
+			) : (
+				<ul class="my-5 ml-6 list-disc text-18 leading-relaxed text-ink-dim">
+					{group.blocks.map((b) => (
+						<li class="mb-2">
+							<Fragment set:html={renderSpans(b)} />
+						</li>
+					))}
+				</ul>
+			)
+		) : (
+			group.blocks.map((b) =>
+				b.style === 'h2' ? (
+					<h2 class={HEADING.h2} set:html={renderSpans(b)} />
+				) : b.style === 'h3' ? (
+					<h3 class={HEADING.h3} set:html={renderSpans(b)} />
+				) : b.style === 'blockquote' ? (
+					<blockquote class="my-8 border-l-2 border-beak-600 pl-6 text-21 leading-relaxed">
+						<Fragment set:html={renderSpans(b)} />
+					</blockquote>
+				) : (
+					<p class="mb-5 text-18 leading-relaxed text-ink-dim" set:html={renderSpans(b)} />
+				)
+			)
+		)
+	)
+}

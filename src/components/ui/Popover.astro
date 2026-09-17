@@ -1,0 +1,50 @@
+---
+/**
+ * The floating fact panels over the hero deck. These are the element Ken
+ * singled out in the reference shots — a card is already a panel of facts
+ * about a bird, so floating them beside it shows the card's own logic before
+ * you've picked one up.
+ *
+ * Always a white surface with dark text, in both themes: they read as physical
+ * cards sitting in front of the artwork, not as page chrome.
+ */
+interface Props {
+	label: string;
+	class?: string;
+	style?: string;
+	width?: string;
+}
+const { label, class: className, style, width } = Astro.props;
+---
+
+<div
+	class:list={['pop', className]}
+	style={[style, width && `width:${width}`].filter(Boolean).join(';')}
+>
+	<span class="pop-label">{label}</span>
+	<slot />
+</div>
+
+<style>
+	.pop {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5625rem;
+		border-radius: 1.125rem;
+		background: #ffffff;
+		color: var(--color-gray-900);
+		padding: 1rem 1.125rem;
+		box-shadow: var(--shadow-pop);
+	}
+	.pop-label {
+		font-size: var(--text-11);
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--color-gray-400);
+	}
+	.pop :global(.pop-rule) {
+		padding-top: 0.5625rem;
+		border-top: 1px solid var(--color-gray-100);
+	}
+</style>

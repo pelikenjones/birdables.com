@@ -1,0 +1,40 @@
+---
+/**
+ * Number · 2px rule · kicker, then the heading. Three of the design's small
+ * allowance of orange marks live here, so this component is most of the
+ * accent budget for a section.
+ */
+interface Props {
+	num: string;
+	kicker: string;
+	title: string;
+	sub?: string;
+	align?: 'left' | 'center';
+	id?: string;
+	class?: string;
+}
+
+const { num, kicker, title, sub, align = 'left', id, class: className } = Astro.props;
+---
+
+<div
+	class:list={[
+		'flex flex-col gap-[1.125rem]',
+		align === 'center' ? 'items-center text-center' : 'items-start',
+		className
+	]}
+>
+	<div class="flex items-center gap-3">
+		<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">{num}</span>
+		<span class="h-0.5 w-[1.625rem] bg-beak-600" aria-hidden="true"></span>
+		<span class="text-13 font-semibold uppercase tracking-eyebrow-wide text-ink-faint">
+			{kicker}
+		</span>
+	</div>
+
+	<h2 id={id} class="text-balance text-38 font-black leading-[1.02] tracking-tightest md:text-52">
+		{title}
+	</h2>
+
+	{sub && <p class="max-w-[45ch] text-17 leading-relaxed text-ink-dim md:text-18">{sub}</p>}
+</div>

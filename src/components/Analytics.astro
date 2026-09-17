@@ -1,0 +1,21 @@
+---
+// Rendered only when PUBLIC_POSTHOG_KEY is set.
+// api_host is /ingest, which vercel.json rewrites to PostHog, so the request is
+// first-party. That rewrite lived in src/vercel.json in v1, where Vercel never
+// read it — and the client pointed straight at us.i.posthog.com anyway.
+---
+
+<script>
+	// Dynamic import so the ~230kB PostHog chunk is fetched only when a key is
+	// actually configured, and never on the critical path.
+	const key = import.meta.env.PUBLIC_POSTHOG_KEY;
+	if (key) {
+		const { default: posthog } = await import('posthog-js');
+		posthog.init(key, {
+			api_host: '/ingest',
+			ui_host: 'https://us.posthog.com',
+			person_profiles: 'always',
+			defaults: '2025-05-24'
+		});
+	}
+</script>

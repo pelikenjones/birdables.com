@@ -1,0 +1,122 @@
+---
+import Logo from '~/components/Logo.astro';
+import NotifyForm from '~/components/ui/NotifyForm.astro';
+import { getSiteSettings } from '~/lib/site';
+import instagram from '~/assets/Instagram.svg?raw';
+import twitter from '~/assets/Twitter.svg?raw';
+import opensea from '~/assets/OpenSea.svg?raw';
+
+const settings = await getSiteSettings();
+const socials = settings?.socialLinks ?? [];
+const icons: Record<string, string> = { instagram, twitter, opensea };
+const names: Record<string, string> = {
+	instagram: 'Instagram',
+	twitter: 'Twitter',
+	opensea: 'OpenSea'
+};
+
+const columns = [
+	{
+		title: 'Cards',
+		links: [
+			{ label: 'All cards', href: '/cards' },
+			{ label: 'The flock', href: '/#flock-heading' },
+			{ label: 'Rarity scale', href: '/#rarity-heading' },
+			{ label: 'Card anatomy', href: '/#anatomy-heading' }
+		]
+	},
+	{
+		title: 'Project',
+		links: [
+			{ label: 'About Birdables', href: '/about' },
+			{ label: 'Field notes', href: '/blog' },
+			{ label: 'Giving back', href: '/#made-right-heading' },
+			{ label: 'Suggest a bird', href: '/#nominate-heading' }
+		]
+	},
+	{
+		title: 'Elsewhere',
+		links: socials.map((s) => ({ label: names[s.platform!] ?? s.platform!, href: s.url! }))
+	}
+];
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-surface-alt">
+	<div class="mx-auto w-full max-w-[90rem] px-4 py-[4.75rem] md:px-16">
+		<div class="flex flex-col justify-between gap-14 lg:flex-row">
+			<div class="flex max-w-[22.5rem] flex-col gap-5">
+				<Logo width={232} />
+				<p class="text-15 leading-relaxed text-ink-dim">
+					Collectable bird cards, drawn and printed with a light touch. Because birds are fly.
+				</p>
+				<ul class="mt-1 flex list-none items-center gap-5 p-0">
+					{
+						socials.map((social) => (
+							<li>
+								<a
+									href={social.url}
+									class="socials inline-flex"
+									rel="me noopener"
+									target="_blank"
+								>
+									<span class="sr-only">{names[social.platform!] ?? social.platform}</span>
+									<Fragment set:html={icons[social.platform!] ?? ''} />
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</div>
+
+			<div class="flex flex-wrap gap-12 lg:gap-[4.5rem]">
+				{
+					columns.map((col) => (
+						<nav class="flex flex-col gap-3.5" aria-label={col.title}>
+							<span class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+								{col.title}
+							</span>
+							{col.links.map((link) => (
+								<a href={link.href} class="text-15 text-ink-dim no-underline hover:text-ink">
+									{link.label}
+								</a>
+							))}
+						</nav>
+					))
+				}
+			</div>
+
+			<div class="flex w-full shrink-0 flex-col gap-3.5 lg:w-[20rem]">
+				<span class="text-16 font-semibold">
+					Be the first to know when new Birdables hatch.
+				</span>
+				<NotifyForm id="notify-footer" variant="compact" />
+			</div>
+		</div>
+
+		<div
+			class="mt-14 flex flex-col gap-4 border-t border-rule pt-7 text-13 text-ink-faint sm:flex-row sm:items-center sm:justify-between"
+		>
+			<span>© {year} Birdables. No trees were harmed in the making of these cards.</span>
+			<div class="flex items-center gap-[1.625rem]">
+				{
+					settings?.contactEmail && (
+						<a href={`mailto:${settings.contactEmail}`} class="text-ink-faint no-underline hover:text-ink">
+							{settings.contactEmail}
+						</a>
+					)
+				}
+				<a href="/privacy" class="text-ink-faint no-underline hover:text-ink">Privacy</a>
+				<a href="/terms" class="text-ink-faint no-underline hover:text-ink">Terms</a>
+			</div>
+		</div>
+	</div>
+</footer>
+
+<style>
+	.socials :global(svg) {
+		height: 1.25rem;
+		width: auto;
+		fill: currentColor;
+	}
+</style>

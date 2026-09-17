@@ -1,0 +1,48 @@
+---
+/**
+ * Rarity as filled stars out of five. Ported from v1's Rarity/Stars pair —
+ * same geometry, not redesigned.
+ *
+ * The star paths live once in SvgSprite; each star here is a <use> reference,
+ * which matters when the flock wall puts 105 of them on one page.
+ *
+ * The stars are decorative; the accessible value is the text alternative, so a
+ * screen reader hears "Rarity 3 of 5" rather than five images.
+ */
+interface Props {
+	value: number;
+	size?: number;
+	gap?: number;
+	label?: boolean;
+}
+const { value, size = 15, gap = 3, label = true } = Astro.props;
+---
+
+<span class="stars inline-flex items-center" style={`gap: ${gap}px`}>
+	{
+		[1, 2, 3, 4, 5].map((i) => (
+			<svg
+				width={size}
+				height={size}
+				viewBox="0 0 24 24"
+                class={i <= value ? 'on' : 'off'}
+				aria-hidden="true"
+			>
+				<use href={i <= value ? '#star-filled' : '#star-empty'} />
+			</svg>
+		))
+	}
+	{label && <span class="sr-only">Rarity {value} of 5</span>}
+</span>
+
+<style>
+	.stars .on {
+		fill: currentColor;
+	}
+	.stars .off {
+		fill: var(--color-gray-200);
+	}
+	:global([data-theme='dark']) .stars .off {
+		fill: rgb(255 255 255 / 0.2);
+	}
+</style>

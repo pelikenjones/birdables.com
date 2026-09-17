@@ -1,0 +1,90 @@
+---
+/**
+ * Two variants only. There are deliberately NO orange buttons anywhere on the
+ * site — the primary action is ink-on-light and white-on-dark, and orange is
+ * reserved for section numbers, rules, dots and the rarity ladder.
+ */
+interface Props {
+	href: string;
+	variant?: 'primary' | 'ghost';
+	class?: string;
+	withArrow?: boolean;
+}
+
+const { href, variant = 'primary', class: className, withArrow = false } = Astro.props;
+
+const base =
+	'btn inline-flex items-center justify-center gap-2.5 rounded-full text-17 font-semibold no-underline';
+const variants = {
+	primary:
+		'btn-primary bg-ink text-surface px-[2.125rem] py-[1.125rem] shadow-[0_10px_24px_rgb(17_25_30_/_0.18)]',
+	ghost: 'btn-ghost border border-gray-200 px-8 py-[1.125rem] text-ink dark-border'
+};
+---
+
+<a href={href} class:list={[base, variants[variant], className]}>
+	<slot />
+	{
+		withArrow && (
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path
+					d="M5 12h13M12.5 5.5L19 12l-6.5 6.5"
+					stroke="currentColor"
+					stroke-width="2.2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
+			</svg>
+		)
+	}
+</a>
+
+<style>
+	.btn {
+		transition:
+			transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+			box-shadow 220ms ease,
+			background-color 180ms ease,
+			border-color 180ms ease,
+			color 180ms ease;
+	}
+	.btn:hover {
+		transform: translateY(-2px);
+	}
+	.btn:active {
+		transform: translateY(0) scale(0.985);
+	}
+
+	/* Primary lifts its shadow with it, so the rise reads as depth. */
+	.btn-primary:hover {
+		box-shadow: 0 16px 30px rgb(17 25 30 / 0.24);
+	}
+	/* Ghost fills faintly rather than moving its border colour only. */
+	.btn-ghost:hover {
+		border-color: var(--ink);
+		background: color-mix(in oklab, var(--ink) 5%, transparent);
+	}
+	/* Links inherit a hover colour globally; a button label must not. */
+	.btn:hover {
+		color: inherit;
+	}
+	.btn-primary:hover {
+		color: var(--surface);
+	}
+
+	/* The ghost border is a flat gray in light and a translucent white in dark,
+	   which no single token expresses. */
+	:global([data-theme='dark']) .dark-border {
+		border-color: rgb(255 255 255 / 0.28);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.btn {
+			transition: background-color 180ms ease, border-color 180ms ease;
+		}
+		.btn:hover,
+		.btn:active {
+			transform: none;
+		}
+	}
+</style>

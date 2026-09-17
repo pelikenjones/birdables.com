@@ -1,0 +1,19 @@
+---
+interface Props {
+	active?: boolean;
+	href?: string;
+	class?: string;
+}
+const { active = false, href, class: className } = Astro.props;
+
+const cls = [
+	'inline-flex items-center rounded-full border px-4 py-2 text-13 font-semibold no-underline transition-colors',
+	active ? 'border-transparent bg-ink text-surface' : 'border-rule text-ink-dim hover:text-ink',
+	className
+];
+const Tag = href ? 'a' : 'span';
+---
+
+<Tag class:list={cls} href={href} aria-current={href && active ? 'page' : undefined}>
+	<slot />
+</Tag>

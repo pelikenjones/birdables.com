@@ -1,0 +1,32 @@
+---
+/**
+ * A page band. The design alternates base and alt surfaces down the page —
+ * `tone` picks which, so the rhythm is declared at the call site rather than
+ * hardcoded into each section.
+ *
+ * Spec: 104px vertical / 64px horizontal at 1440. Expressed in rem, and the
+ * horizontal gutter collapses to 16px on phones per the design-system rules.
+ */
+interface Props {
+	tone?: 'base' | 'alt';
+	id?: string;
+	labelledby?: string;
+	class?: string;
+	/** Vertical padding in rem. The drop band and closing CTA differ. */
+	py?: string;
+}
+
+const { tone = 'base', id, labelledby, class: className, py = '6.5rem', ...rest } = Astro.props;
+---
+
+<section
+	id={id}
+	aria-labelledby={labelledby}
+	class:list={[tone === 'alt' ? 'bg-surface-alt' : 'bg-surface', className]}
+	style={`padding-block: ${py}`}
+	{...rest}
+>
+	<div class="mx-auto w-full max-w-[90rem] px-4 md:px-16">
+		<slot />
+	</div>
+</section>

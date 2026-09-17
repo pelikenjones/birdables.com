@@ -1,0 +1,55 @@
+---
+/**
+ * A <dialog>-based modal. Focus trapping, Escape and page inertness come from
+ * the platform; the only thing added is returning focus to the trigger, which
+ * showModal() does not do.
+ *
+ * Open it from anywhere with `data-modal-open="<id>"`.
+ */
+interface Props {
+	id: string;
+	title: string;
+	class?: string;
+}
+const { id, title, class: className } = Astro.props;
+---
+
+<dialog id={id} class:list={['modal', 'animated', className]} aria-label={title}>
+	<div class="modal-inner">
+		<button type="button" class="modal-close" data-modal-close>
+			<span class="sr-only">Close</span>
+			<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+				<path d="M1 1l14 14M15 1L1 15" stroke="currentColor" stroke-width="2"></path>
+			</svg>
+		</button>
+		<slot />
+	</div>
+</dialog>
+
+<style>
+	.modal {
+		width: min(56rem, 92vw);
+		max-width: none;
+		border: none;
+		border-radius: 2rem;
+		padding: 0;
+		background: var(--surface);
+		color: var(--ink);
+	}
+	.modal-inner {
+		position: relative;
+		padding: 2.5rem;
+	}
+	.modal-close {
+		position: absolute;
+		right: 1.25rem;
+		top: 1.25rem;
+		display: inline-flex;
+		cursor: pointer;
+		border-radius: 999px;
+		border: 1px solid var(--rule);
+		background: var(--surface);
+		color: var(--ink);
+		padding: 0.625rem;
+	}
+</style>
