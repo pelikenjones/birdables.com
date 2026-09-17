@@ -1,19 +1,19 @@
-.DS_Store
-node_modules
-/.svelte-kit
-/package
-build
-functions
-/static/secret/
+# build output
+dist/
+.astro/
+studio/dist/
 
-# dotenv environment variable files
-.env*
+# dependencies
+node_modules/
 
-etsy_shop_json.txt
-# Local Netlify folder
-.netlify
+# env — the real values live only on disk and in Vercel
+.env
+.env.*
+!.env.example
 
-/.vercel_build_output
+# platform
 .vercel
-.env*.local
+.DS_Store
+
+# editor / local
 .claude/settings.local.json
