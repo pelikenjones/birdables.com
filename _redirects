@@ -1,3 +1,0 @@
-# http and https need separate rules if you don’t force_ssl!
-http://birdables.com/* https://www.birdables.cards/:splat 301!
-https://birdables.com/* https://www.birdables.cards/:splat 301!
