@@ -1,0 +1,20 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Logo from '~/components/Logo.astro';
+---
+
+<BaseLayout title="Not found — Birdables" noindex>
+	<header class="flex h-[5.5rem] items-center px-8 md:px-16">
+		<a href="/"><Logo /></a>
+	</header>
+	<main id="main" class="px-8 pb-24 md:px-16">
+		<h1 class="text-42 font-black tracking-tightest">This one flew off.</h1>
+		<p class="mt-4 text-17 text-ink-dim">No page at that address.</p>
+		<a
+			href="/"
+			class="mt-8 inline-flex rounded-full bg-ink px-6 py-3 text-15 font-semibold text-surface"
+		>
+			Back to the nest
+		</a>
+	</main>
+</BaseLayout>

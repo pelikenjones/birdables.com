@@ -1,0 +1,63 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import { allPostsQuery } from '~/lib/queries';
+
+const posts = await sanityClient.fetch(allPostsQuery);
+const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+---
+
+<BaseLayout
+	title="Field notes — Birdables"
+	description="Occasional writing about the birds, the printing, and the site itself."
+>
+	<Nav />
+
+	<main id="main" class="mx-auto w-full max-w-[90rem] px-4 pb-24 pt-8 md:px-16">
+		<h1 class="text-52 font-black tracking-tightest md:text-74">Field notes</h1>
+		<p class="mt-4 max-w-[38rem] text-18 leading-relaxed text-ink-dim">
+			Drop reports, the making of a card, and where to actually find these birds.
+		</p>
+
+		{
+			posts.length === 0 ? (
+				<div class="mt-12 rounded-3xl border border-dashed border-rule p-10">
+					<p class="text-20 font-semibold text-ink-dim">More field notes are coming.</p>
+				</div>
+			) : (
+				<ul class="mt-12 grid list-none grid-cols-1 gap-8 p-0 sm:grid-cols-2 lg:grid-cols-3">
+					{posts.map((post) => (
+						<li>
+							<a
+								href={`/blog/${post.slug}`}
+								class="flex h-full flex-col gap-3.5 rounded-3xl border border-rule bg-panel p-7 no-underline"
+							>
+								<div class="flex flex-wrap items-center gap-2.5">
+									{post.category && (
+										<span class="inline-flex items-center gap-[7px] rounded-full border border-rule px-3.5 py-1.5 text-12 font-semibold text-ink-dim">
+											<span class="size-1.5 rounded-full bg-beak-600" aria-hidden="true" />
+											{post.category}
+										</span>
+									)}
+									<time datetime={post.publishedAt!} class="text-13 text-ink-faint">
+										{fmt.format(new Date(post.publishedAt!))}
+									</time>
+								</div>
+								<span class="text-26 font-black leading-[1.1] tracking-[-0.025em]">
+									{post.title}
+								</span>
+								{post.excerpt && (
+									<span class="text-15 leading-[1.55] text-ink-dim">{post.excerpt}</span>
+								)}
+							</a>
+						</li>
+					))}
+				</ul>
+			)
+		}
+	</main>
+
+	<Footer />
+</BaseLayout>

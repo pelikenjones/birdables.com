@@ -1,0 +1,77 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import PortableText from '~/components/PortableText.astro';
+import { postBySlugQuery } from '~/lib/queries';
+
+export async function getStaticPaths() {
+	const { sanityClient } = await import('sanity:client');
+	const { postSlugsQuery } = await import('~/lib/queries');
+	const slugs = await sanityClient.fetch(postSlugsQuery);
+	return slugs.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const post = await sanityClient.fetch(postBySlugQuery, { slug: slug! });
+if (!post) return Astro.rewrite('/404');
+
+const fmt = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+---
+
+<BaseLayout title={`${post.title} — Birdables`} description={post.excerpt ?? undefined}>
+	<script
+		slot="head"
+		type="application/ld+json"
+		set:html={JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'BlogPosting',
+			headline: post.title,
+			datePublished: post.publishedAt,
+			description: post.excerpt,
+			author: { '@type': 'Person', name: 'Ken Jones' }
+		})}
+	/>
+
+	<Nav />
+
+	<main id="main" class="mx-auto w-full max-w-[90rem] px-4 pb-24 pt-8 md:px-16">
+		<a href="/blog" class="text-14 font-semibold text-ink-faint no-underline">← Field notes</a>
+
+		<article class="mx-auto mt-8 max-w-[45rem]">
+			<div class="flex flex-wrap items-center gap-2.5">
+				{post.category && (
+					<span class="inline-flex items-center gap-[7px] rounded-full border border-rule px-3.5 py-1.5 text-12 font-semibold text-ink-dim">
+						<span class="size-1.5 rounded-full bg-beak-600" aria-hidden="true"></span>
+						{post.category}
+					</span>
+				)}
+				<time datetime={post.publishedAt!} class="text-13 text-ink-faint">
+					{fmt.format(new Date(post.publishedAt!))}
+				</time>
+			</div>
+
+			<h1 class="mt-5 text-balance text-42 font-black leading-[1.04] tracking-tightest md:text-52">
+				{post.title}
+			</h1>
+			{post.excerpt && <p class="mt-5 text-21 leading-relaxed text-ink-dim">{post.excerpt}</p>}
+
+			<div class="mt-12">
+				<PortableText value={post.body} />
+			</div>
+
+			{post.tags && post.tags.length > 0 && (
+				<div class="mt-14 flex flex-wrap items-center gap-2 border-t border-rule pt-6">
+					{post.tags.map((tag) => (
+						<span class="rounded-full border border-rule px-3.5 py-1.5 text-12 text-ink-faint">
+							{tag}
+						</span>
+					))}
+				</div>
+			)}
+		</article>
+	</main>
+
+	<Footer />
+</BaseLayout>

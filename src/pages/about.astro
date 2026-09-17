@@ -1,0 +1,154 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import Stars from '~/components/ui/Stars.astro';
+import StatTile from '~/components/ui/StatTile.astro';
+import Button from '~/components/ui/Button.astro';
+import { formatCount } from '~/lib/utils';
+import { cardsQuery, rarityTiersQuery } from '~/lib/queries';
+import { getSiteSettings } from '~/lib/site';
+
+const [cards, tiers, settings] = await Promise.all([
+	sanityClient.fetch(cardsQuery),
+	sanityClient.fetch(rarityTiersQuery),
+	getSiteSettings()
+]);
+
+const scans = cards.reduce((s, c) => s + (c.qrScans ?? 0), 0);
+---
+
+<BaseLayout
+	title="About Birdables"
+	description="Collectable bird cards, drawn and printed with a light touch. How rarity works, how the cards are made, and where the money goes."
+>
+	<Nav />
+
+	<main id="main" class="mx-auto w-full max-w-[90rem] px-4 pb-24 pt-8 md:px-16">
+		<h1 class="max-w-[22ch] text-balance text-42 font-black leading-[1.04] tracking-tightest md:text-74">
+			Thousands of bird species are at risk. These cards are a small, stubborn act of attention.
+		</h1>
+		<p class="mt-6 max-w-[42rem] text-pretty text-18 leading-relaxed text-ink-dim">
+			Artistic yet realistic designs, a sustainable approach to production, and a distribution
+			model that mirrors real bird populations in the wild. Even birds you think of as common
+			sightings may be rarer than you think.
+		</p>
+
+		<dl class="mt-12 flex flex-col gap-5 sm:flex-row">
+			<StatTile value={String(cards.length)} label="cards in the flock" />
+			<StatTile value={formatCount(scans)} label="QR scans across every card" accent />
+			<StatTile value="100%" label="recycled paper, always" />
+			<StatTile value="Polygon" label="proof-of-stake, for the digital twin" />
+		</dl>
+
+		<section id="rarity" class="mt-24 scroll-mt-24">
+			<div class="flex items-center gap-3">
+				<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">01</span>
+				<span class="h-0.5 w-[1.625rem] bg-beak-600" aria-hidden="true"></span>
+				<span class="text-13 font-semibold uppercase tracking-eyebrow-wide text-ink-faint">
+					The rarity scale
+				</span>
+			</div>
+			<h2 class="mt-4 text-38 font-black tracking-tightest md:text-52">
+				The rarer the bird, the fewer cards exist.
+			</h2>
+			<p class="mt-5 max-w-[42rem] text-18 leading-relaxed text-ink-dim">
+				Rarity caps how many copies of a card can ever exist in one edition. It is a blend of the
+				bird's conservation status, how likely you are to actually spot one, and the Birdables
+				Scale of Majesticness.
+			</p>
+
+			<table class="mt-10 w-full border-collapse text-left">
+				<thead>
+					<tr class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+						<th scope="col" class="pb-3 font-semibold">Rarity</th>
+						<th scope="col" class="hidden pb-3 font-semibold sm:table-cell">Meaning</th>
+						<th scope="col" class="pb-3 text-right font-semibold">Physical</th>
+						<th scope="col" class="pb-3 text-right font-semibold">Digital</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						tiers.map((tier) => (
+							<tr class="border-t border-rule">
+								<td class="w-[7rem] py-4">
+									<Stars value={tier.level ?? 1} size={13} gap={2} />
+								</td>
+								<td class="hidden py-4 pr-6 text-15 text-ink-dim sm:table-cell">{tier.label}</td>
+								<td class="py-4 text-right text-15 font-semibold tabular-nums">
+									{formatCount(tier.maxPhysical ?? 0)}
+								</td>
+								<td class="py-4 text-right text-15 tabular-nums text-ink-dim">
+									{tier.maxDigital}
+								</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</section>
+
+		<section class="mt-24">
+			<div class="flex items-center gap-3">
+				<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">02</span>
+				<span class="h-0.5 w-[1.625rem] bg-beak-600" aria-hidden="true"></span>
+				<span class="text-13 font-semibold uppercase tracking-eyebrow-wide text-ink-faint">
+					Made right
+				</span>
+			</div>
+			<h2 class="mt-4 max-w-[20ch] text-38 font-black tracking-tightest">
+				Printed on 100% recycled paper, down the road from where it is drawn.
+			</h2>
+			<p class="mt-5 max-w-[42rem] text-18 leading-relaxed text-ink-dim">
+				Cards are printed in Charleston, SC — local on purpose, to keep the emissions down. A
+				portion of profits goes to bird conservation, and the digital cards mint on Polygon,
+				which settles by proof-of-stake instead of burning a small country of electricity.
+			</p>
+		</section>
+
+		{
+			settings?.faqs && settings.faqs.length > 0 && (
+				<section class="mt-24">
+					<div class="flex items-center gap-3">
+						<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">03</span>
+						<span class="h-0.5 w-[1.625rem] bg-beak-600" aria-hidden="true" />
+						<span class="text-13 font-semibold uppercase tracking-eyebrow-wide text-ink-faint">
+							FAQ
+						</span>
+					</div>
+					<div class="mt-8 max-w-[52rem]">
+						{settings.faqs.map((faq, i) => (
+							<details class="faq border-t border-rule" open={i === 0}>
+								<summary class="flex cursor-pointer list-none items-center justify-between gap-6 py-[1.625rem]">
+									<span class="text-18 font-semibold sm:text-21">{faq.question}</span>
+									<span class="mark inline-flex size-[2.125rem] shrink-0 items-center justify-center rounded-full border border-rule">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<path class="v" d="M12 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+											<path d="M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+										</svg>
+									</span>
+								</summary>
+								<p class="mb-[1.625rem] text-16 leading-relaxed text-ink-dim">{faq.answer}</p>
+							</details>
+						))}
+						<div class="border-t border-rule" />
+					</div>
+				</section>
+			)
+		}
+
+		<div class="mt-16">
+			<Button href="/cards">Browse all cards</Button>
+		</div>
+	</main>
+
+	<Footer />
+</BaseLayout>
+
+<style>
+	.faq summary::-webkit-details-marker { display: none; }
+	.faq summary .mark { color: var(--ink-faint); }
+	.faq[open] summary .mark { color: var(--accent-ink); border-color: var(--accent-ink); }
+	.faq[open] summary .v { opacity: 0; }
+</style>
