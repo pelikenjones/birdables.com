@@ -2,6 +2,7 @@
 dist/
 .astro/
 studio/dist/
+studio/.sanity/
 
 # dependencies
 node_modules/
