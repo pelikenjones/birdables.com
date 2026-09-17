@@ -1,0 +1,63 @@
+---
+/**
+ * Scroll reveals.
+ *
+ * Deliberately not a library: motion.dev's `inView` pulls its whole bundle
+ * (43kB gzipped) rather than the advertised 0.5kB, and a reveal is an
+ * IntersectionObserver plus a CSS transition.
+ *
+ * Opt in with `data-reveal`:
+ *   data-reveal            a single element rises into place
+ *   data-reveal="stagger"  direct children arrive one after another
+ *
+ * The hidden state is applied by JS, never CSS, so content stays visible if
+ * the script never runs.
+ */
+---
+
+<script>
+	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+
+	if (targets.length && !reduced) {
+		// Skip anything already on screen — revealing what the visitor is already
+		// looking at is a flash, not an entrance.
+		const fold = window.innerHeight * 0.85;
+		const below = targets.filter((el) => el.getBoundingClientRect().top > fold);
+
+		const partsOf = (el: HTMLElement) =>
+			el.dataset.reveal === 'stagger'
+				? (Array.from(el.children) as HTMLElement[])
+				: [el];
+
+		for (const el of below) {
+			for (const part of partsOf(el)) part.classList.add('reveal-armed');
+		}
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) continue;
+					const el = entry.target as HTMLElement;
+
+					partsOf(el).forEach((part, i) => {
+						// Stagger reads as a sequence rather than a single block
+						// arriving, which is what made the old version feel flat.
+						part.style.transitionDelay = `${Math.min(i, 8) * 70}ms`;
+						part.classList.add('reveal-in');
+					});
+
+					observer.unobserve(el);
+				}
+			},
+			{
+				threshold: 0.1,
+				// Negative bottom margin holds the reveal until the section is
+				// properly on screen, rather than firing at the very edge.
+				rootMargin: '0px 0px -22% 0px'
+			}
+		);
+
+		for (const el of below) observer.observe(el);
+	}
+</script>
