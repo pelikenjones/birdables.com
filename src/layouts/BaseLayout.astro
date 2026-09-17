@@ -1,0 +1,94 @@
+---
+import '~/styles/global.css';
+import { themeInitScript } from '~/lib/theme';
+import Analytics from '~/components/Analytics.astro';
+import SvgSprite from '~/components/SvgSprite.astro';
+import Motion from '~/components/Motion.astro';
+import ModalController from '~/components/ui/ModalController.astro';
+
+interface Props {
+	title: string;
+	description?: string;
+	image?: string;
+	noindex?: boolean;
+}
+
+const {
+	title,
+	description = 'Collectible bird cards. Real birds, real data, printed small and given away.',
+	image = '/images/Featured-Image.png',
+	noindex = false
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL(image, Astro.site).href;
+const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+
+		<!-- Before first paint, so switching themes never flashes the wrong surface. -->
+		<script is:inline set:html={themeInitScript} />
+
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonical} />
+		{noindex && <meta name="robots" content="noindex" />}
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Birdables" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:image" content={ogImage} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:site" content="@BirdablesCards" />
+
+		<link rel="icon" href="/favicon.svg" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/manifest.json" />
+		<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#f29600" />
+		<meta name="msapplication-TileColor" content="#ffffff" />
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0c1217" media="(prefers-color-scheme: dark)" />
+
+		<!-- Self-hosted, so preloading the two faces above the fold avoids a FOUT. -->
+		<link
+			rel="preload"
+			href="/fonts/GreycliffCFMedium.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+		<link
+			rel="preload"
+			href="/fonts/GreycliffCFHeavy.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+
+		<slot name="head" />
+	</head>
+
+	<body class="bg-surface text-ink">
+		<SvgSprite />
+
+		<a
+			href="#main"
+			class="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-full focus-visible:bg-ink focus-visible:px-5 focus-visible:py-2 focus-visible:text-15 focus-visible:text-surface"
+		>
+			Skip to content
+		</a>
+
+		<slot />
+
+		<Motion />
+		<ModalController />
+		{posthogKey && <Analytics />}
+	</body>
+</html>

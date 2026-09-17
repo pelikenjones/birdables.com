@@ -1,0 +1,30 @@
+---
+import light from '~/assets/logo-light.svg?raw';
+import dark from '~/assets/logo-dark.svg?raw';
+
+/**
+ * Rendered once per page, near the top of <body>. Everything that repeats a
+ * shape references a symbol here with <use> instead of re-emitting the path.
+ *
+ * Before this the homepage carried four copies of the logo (nav + footer, each
+ * in two themes) and 105 individual star paths — 105kB of duplicated SVG.
+ */
+const toSymbol = (svg: string, id: string) =>
+	svg
+		.replace(/<svg[^>]*>/, `<symbol id="${id}" viewBox="0 0 672 106">`)
+		.replace('</svg>', '</symbol>');
+
+const STAR_FILLED =
+	'M12 18.26l-7.053 3.948 1.575-7.928L.587 8.792l8.027-.952L12 .5l3.386 7.34 8.027.952-5.935 5.488 1.575 7.928z';
+const STAR_EMPTY =
+	'M12 18.26l-7.053 3.948 1.575-7.928L.587 8.792l8.027-.952L12 .5l3.386 7.34 8.027.952-5.935 5.488 1.575 7.928L12 18.26zm0-2.292l4.247 2.377-.949-4.773 3.573-3.305-4.833-.573L12 5.275l-2.038 4.42-4.833.572 3.573 3.305-.949 4.773L12 15.968z';
+---
+
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+	<defs>
+		<Fragment set:html={toSymbol(light, 'logo-light')} />
+		<Fragment set:html={toSymbol(dark, 'logo-dark')} />
+		<symbol id="star-filled" viewBox="0 0 24 24"><path d={STAR_FILLED}></path></symbol>
+		<symbol id="star-empty" viewBox="0 0 24 24"><path d={STAR_EMPTY}></path></symbol>
+	</defs>
+</svg>

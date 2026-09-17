@@ -1,0 +1,32 @@
+---
+interface Props {
+	width?: number;
+	class?: string;
+}
+const { width = 203, class: className } = Astro.props;
+const height = Math.round((width / 672) * 106);
+---
+
+<span class:list={['logo', className]} role="img" aria-label="Birdables">
+	<svg class="logo-light" width={width} height={height} viewBox="0 0 672 106" aria-hidden="true">
+		<use href="#logo-light"></use>
+	</svg>
+	<svg class="logo-dark" width={width} height={height} viewBox="0 0 672 106" aria-hidden="true">
+		<use href="#logo-dark"></use>
+	</svg>
+</span>
+
+<style>
+	.logo {
+		display: inline-flex;
+	}
+	.logo-dark {
+		display: none;
+	}
+	:global([data-theme='dark']) .logo-light {
+		display: none;
+	}
+	:global([data-theme='dark']) .logo-dark {
+		display: inline;
+	}
+</style>

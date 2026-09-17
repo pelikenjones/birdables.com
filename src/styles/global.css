@@ -1,0 +1,373 @@
+@import 'tailwindcss';
+
+/* The legacy SvelteKit app is still on disk as a porting reference. Keep it out
+   of Tailwind's class detection so dead utilities don't ship. */
+@source not "../../_legacy";
+@source not "../../design";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Brand tokens — lifted from the v1 src/app.css and design/canvas/build.mjs.
+   These are theme-independent: the same orange is the same orange in both modes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@theme {
+	--font-sans:
+		'GreycliffCF', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+		'Segoe UI Symbol', 'Noto Color Emoji';
+	--font-weight-normal: 500;
+
+	/* Project gray ramp (replaces Tailwind's default gray) */
+	--color-gray-50: #f7fafc;
+	--color-gray-100: #eff4f6;
+	--color-gray-200: #dbe1e5;
+	--color-gray-300: #acb9c1;
+	--color-gray-400: #7b8890;
+	--color-gray-500: #505a60;
+	--color-gray-600: #3d454a;
+	--color-gray-700: #2b343a;
+	--color-gray-800: #1b242b;
+	--color-gray-900: #11191e;
+
+	/* Charcoals — the dark theme's two surfaces. #11191E reads as soft gray, so
+	   dark mode goes darker than the gray ramp bottoms out. */
+	--color-charcoal: #0c1217;
+	--color-charcoal-band: #131b21;
+
+	/* Brand beak amber. Restrained accent: a handful of marks per page is the
+	   ceiling. No orange buttons — primary actions are ink-on-light / white-on-dark. */
+	--color-beak-50: #fff4e3;
+	--color-beak-100: #ffeed1;
+	--color-beak-200: #ffdfab;
+	--color-beak-300: #ffd186;
+	--color-beak-400: #ffc25e;
+	--color-beak-500: #fbab2a;
+	--color-beak-600: #f29600;
+	--color-beak-700: #d78500;
+	--color-beak-800: #b16e00;
+	--color-beak-900: #794b00;
+
+	--color-gray-blue: #d3e1e4;
+	--color-good: #2e9e5b;
+
+	/* Type scale, named by the px value in the signed-off design but expressed in
+	   rem so it tracks the reader's font size. See design/canvas/build.mjs. */
+	--text-11: 0.6875rem;
+	--text-12: 0.75rem;
+	--text-13: 0.8125rem;
+	--text-14: 0.875rem;
+	--text-15: 0.9375rem;
+	--text-16: 1rem;
+	--text-17: 1.0625rem;
+	--text-18: 1.125rem;
+	--text-20: 1.25rem;
+	--text-21: 1.3125rem;
+	--text-26: 1.625rem;
+	--text-30: 1.875rem;
+	--text-34: 2.125rem;
+	--text-38: 2.375rem;
+	--text-40: 2.5rem;
+	--text-42: 2.625rem;
+	--text-52: 3.25rem;
+	--text-56: 3.5rem;
+	--text-74: 4.625rem;
+
+	--tracking-tightest: -0.035em;
+	--tracking-eyebrow: 0.1em;
+	--tracking-eyebrow-wide: 0.12em;
+
+	--radius-4xl: 2rem;
+	--radius-5xl: 2.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Theme-dependent tokens.
+
+   `@theme inline` emits utilities that point at the raw custom property rather
+   than freezing its value, so redefining --surface under [data-theme='dark']
+   flips every bg-surface on the page with no extra utilities.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@theme inline {
+	--color-surface: var(--surface);
+	--color-surface-alt: var(--surface-alt);
+	--color-panel: var(--panel);
+	--color-ink: var(--ink);
+	--color-ink-dim: var(--ink-dim);
+	--color-ink-faint: var(--ink-faint);
+	--color-rule: var(--rule);
+
+	/* Ordinal ramp for the rarity ladder (1 → 5). Both ramps were validated for
+	   lightness monotonicity, step separation and contrast against their own
+	   surface — do not substitute casually. */
+	--color-rank-1: var(--rank-1);
+	--color-rank-2: var(--rank-2);
+	--color-rank-3: var(--rank-3);
+	--color-rank-4: var(--rank-4);
+	--color-rank-5: var(--rank-5);
+
+	/* Orange as TEXT. The bright beak-600 is 2.30:1 on white — far under the
+	   4.5:1 AA floor — and section numbers are 13px text, not decoration. Only
+	   beak-900 clears it in light mode (7.45), and that same value fails in dark
+	   (2.53) where beak-600 passes at 8.20. So it has to flip with the theme.
+	   Rules, dots and rarity bars keep beak-600: they are decorative marks, not
+	   text, and carry no contrast-ratio requirement. */
+	--color-accent-ink: var(--accent-ink);
+}
+
+:root {
+	color-scheme: light;
+
+	--surface: #ffffff;
+	--surface-alt: var(--color-gray-50);
+	--panel: var(--color-gray-50);
+	--ink: var(--color-gray-900);
+	--ink-dim: var(--color-gray-500);
+	/* Deliberately NOT --color-gray-400. That reads 3.64:1 on white and 3.47:1
+	   on the alt band — under the 4.5:1 WCAG AA floor for normal text, and this
+	   token carries eyebrows, captions and media credits at 12px. #68737b gives
+	   4.85 and 4.63 while staying clearly lighter than --ink-dim. The brand ramp
+	   itself is untouched; only the semantic token moves.
+	   Dark mode already passes (5.17 / 4.78), so it keeps the ramp value. */
+	--ink-faint: #68737b;
+	--rule: var(--color-gray-100);
+
+	/* RAMP_LIGHT — darkens as rarity climbs, against a white surface. */
+	--rank-1: #f29600;
+	--rank-2: #d07c00;
+	--rank-3: #a96200;
+	--rank-4: #7e4900;
+	--rank-5: #523000;
+
+	--accent-ink: var(--color-beak-900);
+
+	--shadow-card:
+		drop-shadow(0 0 1px rgb(17 25 30 / 0.1)) drop-shadow(0 1px 1px rgb(17 25 30 / 0.06))
+		drop-shadow(0 8px 5px rgb(17 25 30 / 0.05)) drop-shadow(0 5px 25px rgb(17 25 30 / 0.1));
+	--shadow-card-hover:
+		drop-shadow(0 0 1px rgb(17 25 30 / 0.1)) drop-shadow(0 1px 1px rgb(17 25 30 / 0.06))
+		drop-shadow(0 8px 15px rgb(17 25 30 / 0.05)) drop-shadow(0 5px 35px rgb(17 25 30 / 0.1));
+	--shadow-pop: 0 1px 2px rgb(17 25 30 / 0.06), 0 14px 34px rgb(17 25 30 / 0.14);
+}
+
+[data-theme='dark'] {
+	color-scheme: dark;
+
+	--surface: var(--color-charcoal);
+	--surface-alt: var(--color-charcoal-band);
+	--panel: rgb(255 255 255 / 0.045);
+	--ink: #ffffff;
+	--ink-dim: var(--color-gray-300);
+	--ink-faint: var(--color-gray-400);
+	--rule: rgb(255 255 255 / 0.11);
+
+	/* RAMP_DARK — lightens as rarity climbs, against charcoal. */
+	--rank-1: #8a5a00;
+	--rank-2: #b16e00;
+	--rank-3: #d78500;
+	--rank-4: #f29600;
+	--rank-5: #ffc25e;
+
+	--accent-ink: var(--color-beak-600);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Utilities
+   ═══════════════════════════════════════════════════════════════════════════ */
+@utility drop-shadow-card {
+	filter: var(--shadow-card);
+}
+
+/* Card artwork is printed with rounded corners, so the bitmap's own corners are
+   square and show as hard edges against a panel — and any clipping container
+   crops the drop shadow into a rectangle. Matching the radius fixes both. */
+@utility card-radius {
+	border-radius: 1.6%;
+	overflow: clip;
+}
+@utility drop-shadow-card-hover {
+	filter: var(--shadow-card-hover);
+}
+@utility shadow-pop {
+	box-shadow: var(--shadow-pop);
+}
+@utility border-3 {
+	border-width: 3px;
+}
+@utility border-b-3 {
+	border-bottom-width: 3px;
+}
+
+/* ── Dialogs ───────────────────────────────────────────────────────────────
+   Tailwind's preflight applies `margin: 0` to everything, which overrides the
+   user-agent `margin: auto` that centres a modal <dialog>. Without this every
+   modal pins itself to the top-left of the viewport.
+
+   The open/close animation uses @starting-style plus `allow-discrete`, so the
+   element can transition in AND out of `display: none` without any JS. */
+@layer components {
+	dialog {
+		margin: auto;
+	}
+
+	dialog.animated {
+		opacity: 0;
+		translate: 0 -10px;
+		transition:
+			opacity 220ms ease,
+			translate 260ms cubic-bezier(0.22, 1, 0.36, 1),
+			display 260ms allow-discrete,
+			overlay 260ms allow-discrete;
+	}
+	dialog.animated[open] {
+		opacity: 1;
+		translate: 0 0;
+	}
+	@starting-style {
+		dialog.animated[open] {
+			opacity: 0;
+			translate: 0 -10px;
+		}
+	}
+
+	dialog.animated::backdrop {
+		background: rgb(12 18 23 / 0);
+		transition:
+			background 220ms ease,
+			display 220ms allow-discrete,
+			overlay 220ms allow-discrete;
+	}
+	dialog.animated[open]::backdrop {
+		background: rgb(12 18 23 / 0.72);
+	}
+	@starting-style {
+		dialog.animated[open]::backdrop {
+			background: rgb(12 18 23 / 0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		dialog.animated,
+		dialog.animated[open] {
+			translate: none;
+			transition: opacity 120ms ease, display 120ms allow-discrete, overlay 120ms allow-discrete;
+		}
+	}
+}
+
+/* Scroll reveals. The armed state is added by JS, so content is visible by
+   default and stays visible if the script never runs. */
+@layer components {
+	.reveal-armed {
+		opacity: 0;
+		transform: translateY(22px);
+		will-change: opacity, transform;
+	}
+	.reveal-in {
+		opacity: 1;
+		transform: none;
+		transition:
+			opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+			transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+		will-change: auto;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.reveal-armed,
+		.reveal-in {
+			opacity: 1;
+			transform: none;
+			transition: none;
+		}
+	}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Base
+   ═══════════════════════════════════════════════════════════════════════════ */
+@layer base {
+	html {
+		background-color: var(--surface);
+		color: var(--ink);
+		-webkit-text-size-adjust: 100%;
+	}
+
+	body {
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	::selection {
+		background: var(--ink);
+		color: var(--surface);
+	}
+
+	/* Every link gets a hover state. Previously only a handful did, so most of
+	   the site gave no feedback at all on hover. */
+	a {
+		color: inherit;
+		transition: color 160ms ease, opacity 160ms ease;
+	}
+	a:hover {
+		color: var(--ink-dim);
+	}
+
+	/* Anything interactive gets the pointer — buttons included. Browsers use
+	   the default arrow on <button>, which reads as inert next to real links. */
+	button:not(:disabled),
+	summary,
+	[role='button'],
+	label[for] {
+		cursor: pointer;
+	}
+	button:disabled {
+		cursor: default;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-beak-600);
+		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
+
+	@font-face {
+		font-family: 'GreycliffCF';
+		font-weight: 500;
+		font-display: swap;
+		src:
+			url('/fonts/GreycliffCFMedium.woff2') format('woff2'),
+			url('/fonts/GreycliffCFMedium.woff') format('woff');
+	}
+	@font-face {
+		font-family: 'GreycliffCF';
+		font-weight: 600;
+		font-display: swap;
+		src:
+			url('/fonts/GreycliffCFDemiBold.woff2') format('woff2'),
+			url('/fonts/GreycliffCFDemiBold.woff') format('woff');
+	}
+	@font-face {
+		font-family: 'GreycliffCF';
+		font-weight: 600;
+		font-style: italic;
+		font-display: swap;
+		src:
+			url('/fonts/GreycliffCFDemiBoldOblique.woff2') format('woff2'),
+			url('/fonts/GreycliffCFDemiBoldOblique.woff') format('woff');
+	}
+	@font-face {
+		font-family: 'GreycliffCF';
+		font-weight: 900;
+		font-display: swap;
+		src:
+			url('/fonts/GreycliffCFHeavy.woff2') format('woff2'),
+			url('/fonts/GreycliffCFHeavy.woff') format('woff');
+	}
+}
