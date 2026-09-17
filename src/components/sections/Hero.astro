@@ -1,0 +1,354 @@
+---
+import Button from '~/components/ui/Button.astro';
+import CardArt from '~/components/CardArt.astro';
+import Popover from '~/components/ui/Popover.astro';
+import Stars from '~/components/ui/Stars.astro';
+import ebird from '~/assets/EBird.svg?raw';
+import audubon from '~/assets/Audubon.svg?raw';
+import bow from '~/assets/BOW.svg?raw';
+import { formatCount } from '~/lib/utils';
+import type { CardsQueryResult, RarityTiersQueryResult } from '~/lib/sanity.types';
+
+interface Props {
+	cards: CardsQueryResult;
+	tiers: RarityTiersQueryResult;
+}
+
+const { cards, tiers } = Astro.props;
+
+// One card, tilted in space, with the fact popovers floating at their own depths.
+const front = cards.find((c) => c.slug === 'brown-pelican') ?? cards[0];
+
+const frontTier = tiers.find((t) => t.level === front?.rarity);
+const stats = [
+	{ value: String(cards.length), label: 'cards in the flock' },
+	{ value: '5', label: 'rarity tiers' },
+	{ value: '100%', label: 'recycled paper' }
+];
+---
+
+<div class="mx-auto flex w-full max-w-[90rem] flex-col items-start gap-14 px-4 pb-24 md:px-16 lg:flex-row">
+	<div class="flex w-full shrink-0 flex-col items-start pt-[2.125rem] lg:w-[33.75rem]">
+		<div class="inline-flex items-center gap-2.5 rounded-full border border-rule px-[1.125rem] py-2.5">
+			<span class="size-[7px] shrink-0 rounded-full bg-beak-600" aria-hidden="true"></span>
+			<span class="text-12 font-semibold uppercase tracking-eyebrow text-ink-dim">
+				Collectible bird cards
+			</span>
+		</div>
+
+		<h1 class="mt-[1.625rem] text-52 font-black leading-[0.94] tracking-tightest md:text-74">
+			Collectable<br />Bird Cards.
+		</h1>
+
+		<p class="mt-[1.125rem] text-26 font-semibold italic leading-tight text-ink-faint md:text-34">
+			Because birds are fly.
+		</p>
+
+		<p class="mt-[1.625rem] max-w-[28.25rem] text-pretty text-18 leading-relaxed text-ink-dim">
+			Artistic, realistic trading cards for the birds you love — printed on 100% recycled paper,
+			with a rarity scale that mirrors how often you would really see one.
+		</p>
+
+		<div class="mt-[2.125rem] flex flex-wrap items-center gap-3.5">
+			<Button href="/cards">Browse all cards</Button>
+			<Button href="/about" variant="ghost">About Birdables</Button>
+		</div>
+
+		<dl class="mt-[2.625rem] flex flex-wrap items-center gap-x-[1.125rem] gap-y-2 text-15 text-ink-dim">
+			{
+				stats.map((stat, i) => (
+					/* The separator has to live inside the div, not as a bare <span>
+					   child of the <dl>, which is invalid. */
+					<div class="flex items-center gap-1.5">
+						{i > 0 && (
+							<span class="mr-[0.5625rem] size-1 rounded-full bg-ink-faint" aria-hidden="true" />
+						)}
+						<dt class="sr-only">{stat.label}</dt>
+						<dd class="m-0 contents">
+							<span class="font-black text-ink">{stat.value}</span>
+							<span>{stat.label}</span>
+						</dd>
+					</div>
+				))
+			}
+		</dl>
+
+		<div class="mt-[3.25rem] w-full max-w-[28.25rem] border-t border-rule pt-[1.875rem]">
+			<span class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+				Every card links out to
+			</span>
+			<div class="partners mt-4 flex items-center gap-[1.875rem]" aria-hidden="true">
+				<Fragment set:html={ebird} />
+				<Fragment set:html={audubon} />
+				<Fragment set:html={bow} />
+			</div>
+		</div>
+	</div>
+
+	<div class="hero-panel" data-hero-deck>
+		<span class="hero-shadow" aria-hidden="true"></span>
+
+		<div class="deck">
+			{front && (
+				<Popover label="Rarity" class="pop-rarity" width="11.875rem">
+					<div class="flex items-center gap-2.5">
+						<Stars value={front.rarity ?? 1} size={15} gap={3} />
+						<span class="text-14 font-semibold">{front.rarity} of 5</span>
+					</div>
+					<div class="pop-rule flex items-center gap-1.5 text-13 text-gray-500">
+						<span>Edition {front.edition} · only</span>
+						<span class="font-black text-gray-900">
+							{frontTier?.maxPhysical ? formatCount(frontTier.maxPhysical) : '—'}
+						</span>
+						<span>ever</span>
+					</div>
+				</Popover>
+			)}
+
+			{front?.bird?.conservationStatus && (
+				<Popover label="Conservation" class="pop-status">
+					<div class="flex items-center gap-2">
+						<span class="size-[9px] shrink-0 rounded-full bg-good" aria-hidden="true" />
+						<span class="text-15 font-semibold">{front.bird.conservationStatus}</span>
+					</div>
+				</Popover>
+			)}
+
+			{
+				front?.artwork?.asset && (
+					<CardArt
+						source={front.artwork.asset}
+						alt={`${front.bird?.commonName} card, edition ${front.edition}`}
+						width={372}
+						lqip={front.artwork.asset.lqip}
+						aspectRatio={front.artwork.asset.aspectRatio}
+						loading="eager"
+						fetchpriority="high"
+						class="deck-card deck-front drop-shadow-card"
+					/>
+				)
+			}
+		</div>
+
+		{front && (
+			<Popover label="Card activity" class="pop-scans" width="10.625rem">
+				<div class="flex items-baseline gap-1.5">
+					<span class="text-26 font-black tracking-[-0.02em] tabular-nums">
+						{formatCount(front.qrScans ?? 0)}
+					</span>
+					<span class="text-14 text-gray-500">scans</span>
+				</div>
+				<div class="pop-rule flex items-center gap-1.5">
+					<span class="size-2 shrink-0 rounded-full bg-good" aria-hidden="true" />
+					<span class="text-13 text-gray-500">Across every copy</span>
+				</div>
+			</Popover>
+		)}
+	</div>
+</div>
+
+<style>
+	.hero-panel {
+		position: relative;
+		display: flex;
+		width: 100%;
+		max-width: 43.75rem;
+		aspect-ratio: 700 / 748;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		border-radius: 2.5rem;
+		background-color: var(--color-gray-blue);
+		background-image: radial-gradient(var(--color-gray-300) 1.2px, transparent 1.2px);
+		background-size: 22px 22px;
+		perspective: 1700px;
+	}
+	:global([data-theme='dark']) .hero-panel {
+		background-color: transparent;
+		background-image: radial-gradient(
+			circle at 50% 42%,
+			rgb(211 225 228 / 0.18),
+			rgb(17 25 30 / 0) 64%
+		);
+		border: 1px solid var(--rule);
+	}
+
+	.hero-shadow {
+		position: absolute;
+		left: 50%;
+		top: 80%;
+		width: 57%;
+		height: 3.5rem;
+		transform: translateX(-50%);
+		border-radius: 999px;
+		background: radial-gradient(ellipse at center, rgb(17 25 30 / 0.26), rgb(0 0 0 / 0) 70%);
+	}
+	:global([data-theme='dark']) .hero-shadow {
+		background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0) 70%);
+	}
+
+	.deck {
+		position: relative;
+		transform-style: preserve-3d;
+		/* Resting pose is the canvas's. --ry/--rx are driven by pointer position;
+		   with no script and with reduced motion they keep these defaults. */
+		--ry: -17deg;
+		--rx: 7deg;
+		transform: rotateY(var(--ry)) rotateX(var(--rx)) rotateZ(-1deg);
+	}
+
+	.deck-card {
+		width: min(23.25rem, 53vw);
+		height: auto;
+		object-fit: contain;
+	}
+	.deck-front {
+		position: relative;
+		display: block;
+	}
+
+	/* Positions are the canvas's pixel offsets expressed against the deck and
+	   panel, so they hold as the hero scales. Below `lg` the panel is too narrow
+	   to hold them outside the card without clipping, so they step aside. */
+	.hero-panel :global(.pop-rarity),
+	.hero-panel :global(.pop-status),
+	.hero-panel :global(.pop-scans) {
+		display: none;
+	}
+
+	@media (min-width: 1024px) {
+		.hero-panel :global(.pop-rarity),
+		.hero-panel :global(.pop-status),
+		.hero-panel :global(.pop-scans) {
+			display: flex;
+			position: absolute;
+		}
+		.hero-panel :global(.pop-rarity) {
+			left: -37%;
+			top: 17.7%;
+			transform: translateZ(96px);
+		}
+		.hero-panel :global(.pop-status) {
+			right: -34%;
+			bottom: 30%;
+			transform: translateZ(122px);
+		}
+		.hero-panel :global(.pop-scans) {
+			right: 6%;
+			top: 12.3%;
+		}
+	}
+
+	.partners :global(svg) {
+		height: 1.375rem;
+		width: auto;
+		filter: grayscale(1);
+		opacity: 0.5;
+	}
+	:global([data-theme='dark']) .partners :global(svg) {
+		filter: grayscale(1) invert(1) brightness(1.7);
+		opacity: 0.6;
+	}
+</style>
+
+<script>
+	/**
+	 * Pointer-driven tilt on the hero card.
+	 *
+	 * No animation library: this is a lerp toward a target, which is a few lines
+	 * and means reduced-motion visitors download nothing at all rather than a
+	 * chunk they never run. The plan earmarked GSAP for "the deck" — with the
+	 * deck down to a single card there is nothing left for it to justify.
+	 *
+	 * Rules carried from ken-jones.com: check prefers-reduced-motion first,
+	 * pass elements in explicitly rather than re-querying, read all geometry
+	 * then write all transforms, and sleep the rAF loop when off-screen.
+	 */
+	// Symmetric around zero so the card genuinely faces right as well as left,
+	// and straightens when the pointer is centred. The old rest of -17 with a
+	// range of 16 could only ever produce -33..-1 — always left, never flat.
+	const REST_Y = 0;
+	const REST_X = 0;
+	const RANGE_Y = 26;
+	const RANGE_X = 11;
+	const EASE = 0.16;
+	// Before the pointer has moved, sit at the canvas's three-quarter pose.
+	const IDLE_Y = -15;
+	const IDLE_X = 6;
+
+	function initTilt(panel: HTMLElement, deck: HTMLElement) {
+		let targetY = IDLE_Y;
+		let targetX = IDLE_X;
+		let currentY = IDLE_Y;
+		let currentX = IDLE_X;
+		let frame = 0;
+		let visible = true;
+
+		const tick = () => {
+			frame = 0;
+			currentY += (targetY - currentY) * EASE;
+			currentX += (targetX - currentX) * EASE;
+
+			deck.style.setProperty('--ry', `${currentY.toFixed(2)}deg`);
+			deck.style.setProperty('--rx', `${currentX.toFixed(2)}deg`);
+
+			// Keep going only while there is meaningful distance left to travel.
+			if (
+				visible &&
+				(Math.abs(targetY - currentY) > 0.05 || Math.abs(targetX - currentX) > 0.05)
+			) {
+				frame = requestAnimationFrame(tick);
+			}
+		};
+
+		const wake = () => {
+			if (!frame && visible) frame = requestAnimationFrame(tick);
+		};
+
+		const onMove = (event: PointerEvent) => {
+			// Normalised against the VIEWPORT's centre, not the card's.
+			//
+			// Measuring from the card meant the response was lopsided: the card
+			// sits right-of-centre, so there was far less screen to its right than
+			// its left, and the rightward travel saturated almost immediately.
+			// Viewport-relative gives a symmetric -1..1 wherever the card sits.
+			const nx = (event.clientX / window.innerWidth - 0.5) * 2;
+			const ny = (event.clientY / window.innerHeight - 0.5) * 2;
+			targetY = REST_Y + Math.max(-1, Math.min(1, nx)) * RANGE_Y;
+			targetX = REST_X - Math.max(-1, Math.min(1, ny)) * RANGE_X;
+			wake();
+		};
+
+		// Only when the pointer leaves the window, since every part of the page
+		// now drives the tilt.
+		const onLeave = () => {
+			targetY = IDLE_Y;
+			targetX = IDLE_X;
+			wake();
+		};
+
+		window.addEventListener('pointermove', onMove, { passive: true });
+		document.addEventListener('pointerleave', onLeave, { passive: true });
+		// Sleep entirely when the hero is scrolled away.
+		new IntersectionObserver((entries) => {
+			visible = entries[0].isIntersecting;
+			if (visible) {
+				wake();
+			} else if (frame) {
+				cancelAnimationFrame(frame);
+				frame = 0;
+			}
+		}).observe(panel);
+	}
+
+	const panel = document.querySelector<HTMLElement>('[data-hero-deck]');
+	const deck = panel?.querySelector<HTMLElement>('.deck');
+
+	// A coarse pointer has no hover to follow, and pointermove during a drag
+	// would fight the scroll. Reduced motion opts out entirely.
+	const wantsMotion =
+		matchMedia('(hover: hover) and (pointer: fine)').matches &&
+		!matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	if (panel && deck && wantsMotion) initTilt(panel, deck);
+</script>

@@ -1,0 +1,83 @@
+---
+import SectionHead from '~/components/SectionHead.astro';
+import Button from '~/components/ui/Button.astro';
+import CardArt from '~/components/CardArt.astro';
+import type { CardsQueryResult } from '~/lib/sanity.types';
+
+interface Props {
+	cards: CardsQueryResult;
+}
+const { cards } = Astro.props;
+
+const FAN = ['california-condor', 'snowy-owl', 'osprey'];
+const fanned = FAN.map((slug) => cards.find((c) => c.slug === slug)).filter(Boolean);
+// Spread wider and sat lower so the three read as a fan rather than a stack.
+// The canvas offsets assumed a 520px box; at smaller widths a 37.7% card at
+// those lefts overlapped its neighbours almost completely.
+const POSE = [
+	{ rot: -9, left: '0%', top: '14%', z: 1 },
+	{ rot: 0, left: '31.5%', top: '0%', z: 3 },
+	{ rot: 9, left: '63%', top: '14%', z: 1 }
+];
+---
+
+<div class="flex flex-col items-start gap-12 lg:flex-row lg:gap-[4.5rem]">
+	<div class="flex-1">
+		<SectionHead
+			num="01"
+			kicker="What are Birdables"
+			title="Thousands of bird species are at risk. These cards are a small, stubborn act of attention."
+			sub="Artistic yet realistic designs, a sustainable approach to production, and a distribution model that mirrors real bird populations in the wild. Even birds you think of as common sightings may be rarer than you think."
+			id="what-are-heading"
+		/>
+		<div class="mt-9 flex flex-wrap items-center gap-3.5">
+			<Button href="/cards">See the cards</Button>
+			<Button href="/about" variant="ghost">Our mission</Button>
+		</div>
+	</div>
+
+	<div class="fan" aria-hidden="true">
+		{
+			fanned.map((card, i) =>
+				card?.artwork?.asset ? (
+					<CardArt
+						source={card.artwork.asset}
+						alt=""
+						width={196}
+						lqip={card.artwork.asset.lqip}
+						aspectRatio={card.artwork.asset.aspectRatio}
+						class="fan-card card-radius drop-shadow-card"
+						style={`left:${POSE[i].left};top:${POSE[i].top};rotate:${POSE[i].rot}deg;z-index:${POSE[i].z}`}
+					/>
+				) : null
+			)
+		}
+	</div>
+</div>
+
+<style>
+	.fan {
+		position: relative;
+		width: 100%;
+		max-width: 32.5rem;
+		aspect-ratio: 520 / 420;
+		flex-shrink: 0;
+	}
+	.fan-card {
+		position: absolute;
+		width: 37%;
+		height: auto;
+		transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	.fan:hover .fan-card {
+		transform: translateY(-6px);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.fan-card {
+			transition: none;
+		}
+		.fan:hover .fan-card {
+			transform: none;
+		}
+	}
+</style>

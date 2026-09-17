@@ -1,0 +1,87 @@
+---
+import SectionHead from '~/components/SectionHead.astro';
+import Button from '~/components/ui/Button.astro';
+import type { RecentPostsQueryResult } from '~/lib/sanity.types';
+
+/**
+ * The canvas pairs however many real posts exist with a dashed "more coming"
+ * panel, rather than a grid that looks broken when the blog is new. Kept that
+ * shape — with one post published, the section still reads as deliberate.
+ */
+interface Props {
+	posts: RecentPostsQueryResult;
+}
+const { posts } = Astro.props;
+
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+	month: 'short',
+	day: 'numeric',
+	year: 'numeric'
+});
+const shown = posts.slice(0, 2);
+---
+
+<div class="flex flex-col items-start gap-12 lg:flex-row lg:gap-[4.5rem]">
+	<div class="w-full shrink-0 lg:w-[26.25rem]">
+		<SectionHead
+			num="11"
+			kicker="Field notes"
+			title="From the blog."
+			sub="All the latest Birdables news and information — new card drops, gear reviews, birding locations, and more."
+			id="field-notes-heading"
+		/>
+		<div class="mt-[1.875rem]">
+			<Button href="/blog" variant="ghost">Read the blog</Button>
+		</div>
+	</div>
+
+	<div class="flex flex-1 flex-col gap-5 self-stretch sm:flex-row">
+		{
+			shown.map((post) => (
+				<a
+					href={`/blog/${post.slug}`}
+					class="flex flex-1 flex-col gap-3.5 rounded-3xl border border-rule bg-panel p-7 no-underline"
+				>
+					<div class="flex flex-wrap items-center gap-2.5">
+						{post.category && (
+							<span class="inline-flex items-center gap-[7px] rounded-full border border-rule px-3.5 py-1.5 text-12 font-semibold text-ink-dim">
+								<span class="size-1.5 rounded-full bg-beak-600" aria-hidden="true" />
+								{post.category}
+							</span>
+						)}
+						<time datetime={post.publishedAt!} class="text-13 text-ink-faint">
+							{dateFmt.format(new Date(post.publishedAt!))}
+						</time>
+					</div>
+
+					<span class="text-26 font-black leading-[1.1] tracking-[-0.025em]">{post.title}</span>
+					{post.excerpt && (
+						<span class="text-15 leading-[1.55] text-ink-dim">{post.excerpt}</span>
+					)}
+
+					{post.tags && post.tags.length > 0 && (
+						<div class="mt-auto flex flex-wrap items-center gap-2 pt-4 text-12 text-ink-faint">
+							{post.tags.map((tag, i) => (
+								<>
+									{i > 0 && (
+										<span class="size-[3px] rounded-full bg-ink-faint" aria-hidden="true" />
+									)}
+									<span>{tag}</span>
+								</>
+							))}
+						</div>
+					)}
+				</a>
+			))
+		}
+
+		<div
+			class="flex flex-1 flex-col items-start justify-center gap-3.5 rounded-3xl border border-dashed border-rule p-7"
+		>
+			<span class="text-20 font-semibold text-ink-dim">More field notes are coming.</span>
+			<span class="text-15 leading-[1.55] text-ink-faint">
+				Drop reports, the making of a card, and where to actually find these birds.
+			</span>
+		</div>
+	</div>
+</div>

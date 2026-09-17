@@ -1,0 +1,137 @@
+---
+import SectionHead from '~/components/SectionHead.astro';
+import Stars from '~/components/ui/Stars.astro';
+import { formatCount } from '~/lib/utils';
+import type { CardsQueryResult, RarityTiersQueryResult } from '~/lib/sanity.types';
+
+/**
+ * Bar length is the edition cap for that rarity — a 1-star 1st edition will
+ * only ever have 2,000 physical copies.
+ *
+ * How many have actually been run (`card.totalPrinted`) is deliberately absent
+ * from the site: it is an internal inventory number, and showing it makes a
+ * 2,000-copy edition read like a 50-copy one.
+ */
+interface Props {
+	cards: CardsQueryResult;
+	tiers: RarityTiersQueryResult;
+}
+const { cards, tiers } = Astro.props;
+
+const max = Math.max(...tiers.map((t) => t.maxPhysical ?? 0), 1);
+const rows = tiers.map((tier) => ({
+	...tier,
+	cards: cards.filter((c) => c.rarity === tier.level).length
+}));
+---
+
+<div class="flex flex-col gap-10">
+	<SectionHead
+		num="03"
+		kicker="The rarity scale"
+		title="The rarer the bird, the fewer cards exist."
+		sub="Rarity sets the cap. A 1-star first edition will only ever have 2,000 physical copies; a 5-star, fifty. Bar length is that cap."
+		id="rarity-heading"
+	/>
+
+	<table class="w-full border-collapse text-left" data-rarity-table>
+		<thead>
+			<tr class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+				<th scope="col" class="pb-3 font-semibold">Rarity</th>
+				<th scope="col" class="hidden pb-3 font-semibold sm:table-cell">Meaning</th>
+				<th scope="col" class="pb-3 font-semibold">Physical copies</th>
+				<th scope="col" class="pb-3 text-right font-semibold">Digital</th>
+			</tr>
+		</thead>
+		<tbody>
+			{
+				rows.map((tier) => (
+					<tr class="border-t border-rule">
+						<td class="w-[7rem] py-[1.125rem] align-middle">
+							<Stars value={tier.level ?? 1} size={13} gap={2} />
+						</td>
+						<td class="hidden py-[1.125rem] pr-6 align-middle text-15 text-ink-dim sm:table-cell">
+							{tier.label}
+						</td>
+						<td class="w-1/2 py-[1.125rem] align-middle">
+							<div class="flex items-center gap-3">
+								<span
+									class="bar h-3.5 rounded"
+									style={`--w: max(0.875rem, ${((tier.maxPhysical ?? 0) / max) * 100}%); background: var(--rank-${tier.level})`}
+									aria-hidden="true"
+								/>
+								<span class="text-14 font-semibold tabular-nums">
+									{formatCount(tier.maxPhysical ?? 0)}
+								</span>
+							</div>
+						</td>
+						<td class="py-[1.125rem] text-right align-middle text-14 tabular-nums text-ink-dim">
+							{tier.maxDigital} digital
+						</td>
+					</tr>
+				))
+			}
+		</tbody>
+	</table>
+
+	<!--
+	  These were pills, which read as buttons and did nothing when pressed. They
+	  are three ingredients, not three controls, so they are now plainly a list.
+	-->
+	<p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-15 text-ink-dim">
+		<span class="text-ink-faint">Rarity is a secret blend of</span>
+		<span class="font-semibold text-ink">conservation status</span>
+		<span class="text-ink-faint">·</span>
+		<span class="font-semibold text-ink">likeliness of being spotted</span>
+		<span class="text-ink-faint">·</span>
+		<span class="font-semibold text-ink">the Birdables Scale of Majesticness</span>
+	</p>
+</div>
+
+<style>
+	/* Bars grow from nothing once the ladder is properly on screen. Width rather
+	   than transform, because a scaled bar would drag its rounded cap with it. */
+	.bar {
+		width: 0;
+		transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	.bar.grown {
+		width: var(--w);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.bar {
+			width: var(--w);
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	const table = document.querySelector<HTMLElement>('[data-rarity-table]');
+
+	if (table) {
+		const bars = Array.from(table.querySelectorAll<HTMLElement>('.bar'));
+		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+		if (reduced) {
+			for (const bar of bars) bar.classList.add('grown');
+		} else {
+			const observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) {
+						if (!entry.isIntersecting) continue;
+						bars.forEach((bar, i) => {
+							// Cascade down the ladder so it reads as a ranking being
+							// drawn, not five bars appearing at once.
+							bar.style.transitionDelay = `${i * 110}ms`;
+							bar.classList.add('grown');
+						});
+						observer.disconnect();
+					}
+				},
+				{ threshold: 0.4 }
+			);
+			observer.observe(table);
+		}
+	}
+</script>

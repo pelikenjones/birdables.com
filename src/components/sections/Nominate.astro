@@ -1,0 +1,125 @@
+---
+import SectionHead from '~/components/SectionHead.astro';
+import type { NominationsQueryResult } from '~/lib/sanity.types';
+
+interface Props {
+	nominations: NominationsQueryResult;
+}
+const { nominations } = Astro.props;
+
+const max = Math.max(...nominations.map((n) => n.voteCount ?? 0), 1);
+---
+
+<div class="flex flex-col gap-9">
+	<SectionHead
+		num="08"
+		kicker="Nominate"
+		title="Which bird joins the flock next?"
+		sub="A running vote. The winner gets illustrated, and the people who nominated it get first crack at the edition."
+		id="nominate-heading"
+	/>
+
+	<ol class="m-0 flex list-none flex-col p-0" data-nominations>
+		{
+			nominations.map((nom, i) => (
+				<li class="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-rule py-4">
+					<span class="w-[2.125rem] shrink-0 text-14 font-black tabular-nums text-ink-faint">
+						{String(i + 1).padStart(2, '0')}
+					</span>
+					<span class="w-[10rem] shrink-0 text-17 font-semibold sm:w-[14.375rem]">
+						{nom.birdName}
+					</span>
+
+					<span
+						class="hidden h-3 rounded bg-gray-300 sm:block"
+						style={`width: max(0.75rem, ${((nom.voteCount ?? 0) / max) * 26}rem)`}
+						aria-hidden="true"
+					/>
+					<span class="text-14 tabular-nums text-ink-dim" data-count={nom._id}>
+						{nom.voteCount ?? 0}
+					</span>
+
+					<button
+						type="button"
+						class="ml-auto inline-flex items-center gap-[7px] rounded-full border border-rule px-4 py-2.5 text-13 font-semibold disabled:opacity-50"
+						data-vote={nom._id}
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M12 5v14M5 12h14"
+								stroke="var(--color-beak-600)"
+								stroke-width="2.2"
+								stroke-linecap="round"
+							/>
+						</svg>
+						Vote
+						<span class="sr-only">for {nom.birdName}</span>
+					</button>
+				</li>
+			))
+		}
+		<li class="border-t border-rule" aria-hidden="true"></li>
+	</ol>
+
+	<p class="text-13 text-ink-faint" data-vote-status role="status" aria-live="polite"></p>
+</div>
+
+<script>
+	const status = document.querySelector<HTMLElement>('[data-vote-status]');
+	// Votes are stored per-browser only — this stops the same person double-tapping,
+	// it is not identity. The server-side rate limit is the real guard.
+	const KEY = 'birdables:voted';
+
+	const voted = (): string[] => {
+		try {
+			return JSON.parse(localStorage.getItem(KEY) ?? '[]');
+		} catch {
+			return [];
+		}
+	};
+
+	const remember = (id: string) => {
+		try {
+			localStorage.setItem(KEY, JSON.stringify([...new Set([...voted(), id])]));
+		} catch {
+			/* storage blocked — the vote still counted */
+		}
+	};
+
+	const already = voted();
+	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-vote]')) {
+		if (already.includes(button.dataset.vote!)) button.disabled = true;
+	}
+
+	document.querySelector('[data-nominations]')?.addEventListener('click', async (event) => {
+		const button = (event.target as Element).closest<HTMLButtonElement>('[data-vote]');
+		if (!button || button.disabled) return;
+
+		const id = button.dataset.vote!;
+		button.disabled = true;
+
+		try {
+			const res = await fetch('/api/vote', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ id })
+			});
+			const body = await res.json();
+
+			if (res.ok) {
+				const count = document.querySelector(`[data-count="${id}"]`);
+				if (count && typeof body.voteCount === 'number') {
+					count.textContent = String(body.voteCount);
+				}
+				remember(id);
+				if (status) status.textContent = 'Vote counted. Thanks.';
+			} else {
+				button.disabled = false;
+				if (status) status.textContent = body.error ?? 'Could not record that vote.';
+			}
+		} catch {
+			button.disabled = false;
+			if (status) status.textContent = 'Network hiccup. Try again?';
+		}
+	});
+</script>

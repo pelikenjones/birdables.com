@@ -1,0 +1,39 @@
+---
+import SectionHead from '~/components/SectionHead.astro';
+import StatTile from '~/components/ui/StatTile.astro';
+---
+
+<div class="flex flex-col items-center gap-12 lg:flex-row lg:gap-[4.5rem]">
+	<div class="relative w-full shrink-0 lg:w-[32.5rem]">
+		<img
+			src="/images/give-back-recycling.jpg"
+			alt="Recycled paper stock and packaging for a Birdables print run"
+			width="520"
+			height="390"
+			loading="lazy"
+			decoding="async"
+			class="h-auto w-full rounded-[1.75rem] object-cover"
+		/>
+		<div
+			class="mt-4 rounded-[1.25rem] border-l-[3px] border-beak-600 bg-surface p-5 shadow-pop lg:absolute lg:-bottom-7 lg:-right-7 lg:mt-0 lg:px-6"
+		>
+			<span class="block text-30 font-black tracking-tightest">0 trees</span>
+			<span class="block text-13 text-ink-dim">cut down for a Birdable</span>
+		</div>
+	</div>
+
+	<div class="flex-1">
+		<SectionHead
+			num="09"
+			kicker="Made right"
+			title="Printed on 100% recycled paper, down the road from where it is drawn."
+			sub="Cards are printed in Charleston, SC — local on purpose, to keep the emissions down. A portion of profits goes to bird conservation, and the digital cards mint on Polygon, which settles by proof-of-stake instead of burning a small country of electricity."
+			id="made-right-heading"
+		/>
+		<dl class="mt-9 flex flex-col gap-4 sm:flex-row">
+			<StatTile value="100%" label="recycled paper, always" />
+			<StatTile value={'2.5 × 3.5"'} label="standard trading card size" />
+			<StatTile value="Polygon" label="proof-of-stake, for the digital twin" />
+		</dl>
+	</div>
+</div>

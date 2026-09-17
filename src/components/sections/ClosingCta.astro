@@ -1,0 +1,36 @@
+---
+import Button from '~/components/ui/Button.astro';
+import { getSiteSettings } from '~/lib/site';
+
+const settings = await getSiteSettings();
+---
+
+<div class="relative overflow-hidden rounded-[2.75rem] bg-gray-900 p-10 text-white md:p-[4.5rem] lg:flex lg:items-center lg:justify-between lg:gap-16">
+	<span
+		class="pointer-events-none absolute -right-20 -top-20 size-80 rounded-full bg-beak-600/[0.16]"
+		aria-hidden="true"></span>
+
+	<div class="relative max-w-[38.75rem]">
+		<h2 class="text-38 font-black leading-[1.02] tracking-tightest md:text-56">
+			{settings?.ctaHeading}
+		</h2>
+		<p class="mt-5 text-18 leading-relaxed text-gray-300">{settings?.ctaBody}</p>
+	</div>
+
+	<div class="relative mt-10 flex shrink-0 flex-col gap-3.5 lg:mt-0">
+		<Button href={settings?.ctaButtonHref ?? '/cards'} class="cta-button" withArrow>
+			{settings?.ctaButtonLabel}
+		</Button>
+		<a href="/about" class="text-center text-16 font-semibold text-white underline underline-offset-[3px]">
+			Learn about Birdables
+		</a>
+	</div>
+</div>
+
+<style>
+	/* The band is always dark, so the primary button inverts regardless of theme. */
+	.cta-button {
+		background: #ffffff;
+		color: var(--color-gray-900);
+	}
+</style>

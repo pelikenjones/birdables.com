@@ -1,0 +1,147 @@
+---
+import { Image } from 'astro:assets';
+import SectionHead from '~/components/SectionHead.astro';
+import Button from '~/components/ui/Button.astro';
+import { getSiteSettings } from '~/lib/site';
+
+// Imported as assets rather than referenced from public/, so Astro's pipeline
+// re-encodes and generates a srcset. Straight out of public/ these shipped at
+// their source weight — 437kB for one decorative photo, 840kB across three,
+// which was most of the homepage's image budget.
+import onGrass from '~/assets/wild/cards-on-grass.webp';
+import waxwing from '~/assets/wild/cedar-waxwing-in-bush.webp';
+import onFeeder from '~/assets/wild/cards-on-feeder.webp';
+
+/**
+ * Cards out in the world.
+ *
+ * Previously five rotated polaroids in a row, which read as clip-art: the
+ * rotations fought the grid, the frames competed with the photos, and nothing
+ * was large enough to actually look at. This is an editorial arrangement
+ * instead — one photograph given real size, three supporting it, no gimmicks.
+ */
+const settings = await getSiteSettings();
+const instagram = settings?.socialLinks?.find((s) => s.platform === 'instagram')?.url ?? '#';
+
+const LEAD = { src: onGrass, alt: 'A row of Birdables cards laid out on grass' };
+const REST = [
+	{ src: waxwing, alt: 'A Cedar Waxwing card held up against a bush' },
+	{ src: onFeeder, alt: 'Birdables cards propped on a garden feeder' }
+];
+---
+
+<div class="flex flex-col gap-11">
+	<div class="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-end">
+		<SectionHead
+			num="10"
+			kicker="In the wild"
+			title="Birdables, out being Birdables."
+			sub="Share yours with #BirdablesInTheWild."
+			id="in-the-wild-heading"
+		/>
+		<Button href={instagram} variant="ghost">View on Instagram</Button>
+	</div>
+
+	<div class="grid grid-cols-1 gap-4 lg:grid-cols-12" data-reveal="stagger">
+		<figure class="wild m-0 lg:col-span-7">
+			<button type="button" class="wild-btn" data-modal-open="wild-0">
+				<span class="sr-only">Expand: {LEAD.alt}</span>
+				<Image
+					src={LEAD.src}
+					alt={LEAD.alt}
+					widths={[480, 760, 1100]}
+					sizes="(max-width: 1024px) 100vw, 58vw"
+					loading="lazy"
+					class="aspect-[4/3] w-full rounded-3xl object-cover"
+				/>
+			</button>
+		</figure>
+
+		<div class="grid grid-cols-2 gap-4 lg:col-span-5 lg:grid-cols-1">
+			{
+				REST.map((shot, i) => (
+					<figure class="wild m-0">
+						<button type="button" class="wild-btn" data-modal-open={`wild-${i + 1}`}>
+							<span class="sr-only">Expand: {shot.alt}</span>
+							<Image
+								src={shot.src}
+								alt={shot.alt}
+								widths={[360, 560, 800]}
+								sizes="(max-width: 1024px) 50vw, 40vw"
+								loading="lazy"
+								class="aspect-[16/10] w-full rounded-3xl object-cover"
+							/>
+						</button>
+					</figure>
+				))
+			}
+		</div>
+	</div>
+
+	{
+		[LEAD, ...REST].map((shot, i) => (
+			<dialog id={`wild-${i}`} class="wild-modal animated" aria-label={shot.alt}>
+				<button type="button" class="wild-close" data-modal-close>
+					<span class="sr-only">Close</span>
+					<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
+						<path d="M1 1l14 14M15 1L1 15" stroke="currentColor" stroke-width="2" />
+					</svg>
+				</button>
+				<Image
+					src={shot.src}
+					alt={shot.alt}
+					widths={[900, 1400]}
+					sizes="94vw"
+					loading="lazy"
+					class="h-auto max-h-[82vh] w-full rounded-2xl object-contain"
+				/>
+			</dialog>
+		))
+	}
+</div>
+
+<style>
+	.wild-btn {
+		display: block;
+		width: 100%;
+		border: 0;
+		padding: 0;
+		background: none;
+		border-radius: 1.5rem;
+		overflow: clip;
+	}
+	.wild-modal {
+		width: min(72rem, 94vw);
+		max-width: none;
+		border: none;
+		background: transparent;
+		color: #ffffff;
+		padding: 0;
+		overflow: visible;
+	}
+	.wild-close {
+		position: absolute;
+		right: 0;
+		top: -3rem;
+		display: inline-flex;
+		border: 0;
+		background: none;
+		color: #ffffff;
+		padding: 0.5rem;
+	}
+
+	.wild img {
+		transition:
+			transform 620ms cubic-bezier(0.22, 1, 0.36, 1),
+			filter 620ms ease;
+	}
+	.wild:hover img {
+		transform: scale(1.025);
+		filter: saturate(1.06);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.wild img {
+			transition: none;
+		}
+	}
+</style>

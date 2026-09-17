@@ -1,0 +1,165 @@
+---
+import SectionHead from '~/components/SectionHead.astro';
+import CardArt from '~/components/CardArt.astro';
+import type { CardsQueryResult } from '~/lib/sanity.types';
+
+interface Props {
+	cards: CardsQueryResult;
+}
+const { cards } = Astro.props;
+const card = cards.find((c) => c.slug === 'brown-pelican') ?? cards[0];
+
+/** y is a percentage down the diagram, matching the canvas's pixel offsets. */
+const PARTS = [
+	{ title: 'Bird name', sub: 'Name for common folk', y: 14.3, side: 'left' },
+	{ title: 'Scientific name', sub: 'Name for smarty-pants', y: 28, side: 'left' },
+	{ title: 'Card information', sub: 'Edition · continent · status', y: 35, side: 'right' },
+	{ title: 'Rarity scale', sub: '1–5 stars of rareness', y: 41.7, side: 'left' },
+	{ title: 'Call & song', sub: 'How the bird sounds, drawn', y: 61, side: 'left' },
+	{ title: 'Habitat map', sub: 'Where the bird turns up', y: 75.3, side: 'right' },
+	{ title: 'QR code', sub: 'Scan to meet the bird', y: 87.3, side: 'right' }
+] as const;
+---
+
+<div class="flex flex-col items-center gap-11">
+	<SectionHead
+		num="02"
+		kicker="Card anatomy"
+		title="Seven things every card tells you."
+		sub="Each Birdables card carries elements that reveal information about the bird — or about the card itself."
+		align="center"
+		id="anatomy-heading"
+	/>
+
+	<!--
+	  One source of truth for the seven parts, rendered twice: as a labelled
+	  diagram on wide screens, and as a plain description list on narrow ones.
+	  The leader lines are decorative, so only the list carries semantics.
+	-->
+	<div class="anatomy hidden w-full lg:block">
+		<div class="anatomy-stage">
+			{
+				card?.artwork?.asset && (
+					<CardArt
+						source={card.artwork.asset}
+						alt={`${card.bird?.commonName} card, edition ${card.edition}`}
+						width={400}
+						lqip={card.artwork.asset.lqip}
+						aspectRatio={card.artwork.asset.aspectRatio}
+						class="anatomy-card card-radius drop-shadow-card"
+					/>
+				)
+			}
+
+			{
+				PARTS.map((part) => (
+					<div class:list={['leader', `leader-${part.side}`]} style={`top:${part.y}%`}>
+						<div class="leader-text">
+							<span class="block text-14 font-semibold uppercase tracking-[0.08em]">
+								{part.title}
+							</span>
+							<span class="block text-13 text-ink-faint">{part.sub}</span>
+						</div>
+						<span class="leader-line" aria-hidden="true" />
+						<span class="leader-dot" aria-hidden="true" />
+					</div>
+				))
+			}
+		</div>
+	</div>
+
+	<div class="w-full lg:hidden">
+		{
+			card?.artwork?.asset && (
+				<CardArt
+					source={card.artwork.asset}
+					alt={`${card.bird?.commonName} card, edition ${card.edition}`}
+					width={320}
+					lqip={card.artwork.asset.lqip}
+					aspectRatio={card.artwork.asset.aspectRatio}
+					class="card-radius mx-auto h-auto w-[min(20rem,70vw)] drop-shadow-card"
+				/>
+			)
+		}
+		<dl class="mt-10 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+			{
+				PARTS.map((part) => (
+					<div class="border-t border-rule pt-4">
+						<dt class="text-14 font-semibold uppercase tracking-[0.08em]">{part.title}</dt>
+						<dd class="mt-1 text-13 text-ink-faint">{part.sub}</dd>
+					</div>
+				))
+			}
+		</dl>
+	</div>
+</div>
+
+<style>
+	/* Every dimension here is proportional. The previous version mixed a fixed
+	   19rem label against percentage-width containers, so on any stage narrower
+	   than the 1312px design the text crowded out the leader line and shoved
+	   the dot off its target — which is why the labels stopped lining up. */
+	.anatomy-stage {
+		position: relative;
+		margin-inline: auto;
+		width: 100%;
+		max-width: 82rem;
+		aspect-ratio: 1312 / 600;
+	}
+
+	.anatomy-card {
+		position: absolute;
+		left: 50%;
+		/* 20px down and 560px tall within a 600px stage, as drawn. Height is set
+		   explicitly rather than left to the intrinsic ratio, so the y-percentages
+		   below always address the same points on the card. */
+		top: 3.34%;
+		height: 93.33%;
+		width: 30.5%;
+		object-fit: contain;
+		translate: -50% 0;
+	}
+
+	.leader {
+		position: absolute;
+		display: flex;
+		align-items: center;
+		translate: 0 -50%;
+	}
+	/* Dots land just inside the card's edges (34.75% and 65.25%). */
+	.leader-left {
+		left: 4.5%;
+		width: 33.5%;
+		flex-direction: row;
+	}
+	.leader-right {
+		right: 4.5%;
+		width: 33.5%;
+		flex-direction: row-reverse;
+	}
+
+	.leader-text {
+		width: 62%;
+		flex-shrink: 0;
+		min-width: 0;
+	}
+	.leader-left .leader-text {
+		text-align: right;
+	}
+
+	.leader-line {
+		height: 1px;
+		flex: 1 1 auto;
+		min-width: 0.75rem;
+		background: var(--color-beak-600);
+		margin-inline: 0.625rem;
+	}
+	.leader-dot {
+		width: 9px;
+		height: 9px;
+		flex-shrink: 0;
+		border-radius: 999px;
+		border: 2px solid var(--color-beak-600);
+		background: var(--surface);
+	}
+</style>

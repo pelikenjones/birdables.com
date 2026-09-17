@@ -1,0 +1,73 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import Section from '~/components/Section.astro';
+
+import Hero from '~/components/sections/Hero.astro';
+import WhatAre from '~/components/sections/WhatAre.astro';
+import Anatomy from '~/components/sections/Anatomy.astro';
+import RarityLadder from '~/components/sections/RarityLadder.astro';
+import Flock from '~/components/sections/Flock.astro';
+import Scan from '~/components/sections/Scan.astro';
+import Bingo from '~/components/sections/Bingo.astro';
+import DropBand from '~/components/sections/DropBand.astro';
+import Nominate from '~/components/sections/Nominate.astro';
+import MadeRight from '~/components/sections/MadeRight.astro';
+import InTheWild from '~/components/sections/InTheWild.astro';
+import FieldNotes from '~/components/sections/FieldNotes.astro';
+import Faq from '~/components/sections/Faq.astro';
+import ClosingCta from '~/components/sections/ClosingCta.astro';
+
+import {
+	cardsQuery,
+	nominationsQuery,
+	rarityTiersQuery,
+	recentPostsQuery
+} from '~/lib/queries';
+
+const [cards, tiers, nominations, posts] = await Promise.all([
+	sanityClient.fetch(cardsQuery),
+	sanityClient.fetch(rarityTiersQuery),
+	sanityClient.fetch(nominationsQuery),
+	sanityClient.fetch(recentPostsQuery)
+]);
+---
+
+<BaseLayout title="Birdables — collectable bird cards">
+	<Nav />
+
+	<main id="main">
+		<Hero cards={cards} tiers={tiers} />
+
+		<Section tone="base" data-reveal labelledby="what-are-heading"><WhatAre cards={cards} /></Section>
+		<Section tone="alt" data-reveal labelledby="anatomy-heading"><Anatomy cards={cards} /></Section>
+		<Section tone="base" data-reveal labelledby="rarity-heading"><RarityLadder cards={cards} tiers={tiers} /></Section>
+		<Section tone="alt" data-reveal labelledby="flock-heading"><Flock cards={cards} /></Section>
+		<Section tone="base" data-reveal labelledby="scan-heading"><Scan cards={cards} /></Section>
+		<Section tone="alt" data-reveal labelledby="bingo-heading"><Bingo cards={cards} /></Section>
+		<Section tone="alt" data-reveal labelledby="drop-heading" py="5.5rem"><DropBand /></Section>
+
+		{
+			nominations.length > 0 && (
+				<Section tone="base" data-reveal labelledby="nominate-heading">
+					<Nominate nominations={nominations} />
+				</Section>
+			)
+		}
+
+		<Section tone="alt" data-reveal labelledby="made-right-heading"><MadeRight /></Section>
+		<Section tone="base" data-reveal labelledby="in-the-wild-heading"><InTheWild /></Section>
+
+		{/* Renders with zero posts too — the dashed panel carries the section. */}
+		<Section tone="alt" data-reveal labelledby="field-notes-heading">
+			<FieldNotes posts={posts} />
+		</Section>
+
+		<Section tone="base" data-reveal labelledby="faq-heading"><Faq /></Section>
+		<Section tone="base" data-reveal py="0 6.5rem"><ClosingCta /></Section>
+	</main>
+
+	<Footer />
+</BaseLayout>
