@@ -1,0 +1,227 @@
+---
+import { sanityClient } from 'sanity:client';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Nav from '~/components/Nav.astro';
+import Footer from '~/components/Footer.astro';
+import Modal from '~/components/ui/Modal.astro';
+import Stars from '~/components/ui/Stars.astro';
+import CardViewer from '~/components/bird/CardViewerThree.astro';
+import SpecRail from '~/components/bird/SpecRail.astro';
+import AudioPlayer from '~/components/bird/AudioPlayer.astro';
+import PhotoStrip from '~/components/bird/PhotoStrip.astro';
+import AdditionalInfo from '~/components/bird/AdditionalInfo.astro';
+import BirdNav from '~/components/bird/BirdNav.astro';
+import { birdBySlugQuery, birdNavQuery, rarityTiersQuery } from '~/lib/queries';
+
+export async function getStaticPaths() {
+	// getStaticPaths is hoisted into its own module context — anything declared
+	// in the frontmatter above is invisible in here, so it imports its own.
+	const { sanityClient } = await import('sanity:client');
+	const { birdSlugsQuery } = await import('~/lib/queries');
+	const slugs = await sanityClient.fetch(birdSlugsQuery);
+	return slugs.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+
+const [bird, nav, tiers] = await Promise.all([
+	sanityClient.fetch(birdBySlugQuery, { slug: slug! }),
+	sanityClient.fetch(birdNavQuery),
+	sanityClient.fetch(rarityTiersQuery)
+]);
+
+if (!bird) return Astro.rewrite('/404');
+
+const card = bird.cards?.[0];
+const i = nav.findIndex((n) => n.slug === slug);
+const prev = nav[(i - 1 + nav.length) % nav.length];
+const next = nav[(i + 1) % nav.length];
+
+const description = bird.habitat
+	? `${bird.commonName} (${bird.scientificName}). ${bird.habitat}`
+	: `${bird.commonName} — a Birdables collectable card.`;
+
+const links = [
+	bird.eBirdSlug && { label: 'eBird', href: `https://ebird.org/species/${bird.eBirdSlug}` },
+	bird.audubonSlug && {
+		label: 'Audubon',
+		href: `https://www.audubon.org/field-guide/bird/${bird.audubonSlug}`
+	},
+	bird.eBirdSlug && {
+		label: 'Birds of the World',
+		href: `https://birdsoftheworld.org/bow/species/${bird.eBirdSlug}`
+	}
+].filter(Boolean) as { label: string; href: string }[];
+---
+
+<BaseLayout
+	title={`${bird.commonName} — Birdables`}
+	description={description}
+	image={card?.artwork?.asset?.url ?? undefined}
+>
+	<script
+		slot="head"
+		type="application/ld+json"
+		set:html={JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'Product',
+			name: `${bird.commonName} card`,
+			category: 'Collectable trading cards',
+			image: card?.artwork?.asset?.url,
+			description,
+			brand: { '@type': 'Brand', name: 'Birdables' }
+		})}
+	/>
+
+	<Nav />
+
+	<main id="main" class="mx-auto w-full max-w-[90rem] px-4 pt-5 md:px-16">
+		<!--
+		  Two independent columns rather than two stacked rows. As rows, the
+		  second row could not begin until the tall card finished, which is what
+		  pushed the rail so far below the paragraph. As columns, the left flows
+		  prose → rail and the right flows card → detail, each at its own pace.
+		-->
+		<div
+			class="flex flex-col gap-14 pb-24 lg:grid lg:grid-cols-[minmax(0,1fr)_42rem] xl:grid-cols-[minmax(0,1fr)_50rem]"
+		>
+			<div class="flex flex-col items-start pt-3">
+				<a href="/cards" class="text-14 font-semibold text-ink-faint no-underline">← All birds</a>
+
+				<h1 class="mt-[1.125rem] flex flex-col">
+					{card?.smallName && (
+						<span class="text-34 font-medium leading-none tracking-[-0.02em] text-ink-dim">
+							{card.smallName}
+						</span>
+					)}
+					<span class="text-52 font-black leading-[0.95] tracking-tightest md:text-74">
+						{card?.bigName ?? bird.commonName}
+					</span>
+				</h1>
+				<p class="mt-3 text-26 font-semibold italic text-ink-faint">{bird.scientificName}</p>
+
+				{bird.habitat && (
+					<p class="mt-7 max-w-[34rem] text-pretty text-18 leading-relaxed text-ink-dim">
+						{bird.habitat}
+					</p>
+				)}
+				{bird.behavior && (
+					<p class="mt-4 max-w-[34rem] text-pretty text-18 leading-relaxed text-ink-dim">
+						{bird.behavior}
+					</p>
+				)}
+
+				{bird.audio?.url && bird.audio.credit && (
+					<div class="mt-9 w-full max-w-[34rem]">
+						<AudioPlayer
+							url={bird.audio.url}
+							title={bird.audio.title}
+							durationSeconds={bird.audio.durationSeconds}
+							author={bird.audio.credit.author}
+							license={bird.audio.credit.license}
+							sourceUrl={bird.audio.credit.sourceUrl}
+							sourceId={bird.audio.credit.sourceId}
+							source={bird.audio.credit.source}
+						/>
+					</div>
+				)}
+
+				<div class="mt-12 w-full flex-1">
+					<SpecRail bird={bird} tiers={tiers} />
+				</div>
+			</div>
+
+			<div class="flex w-full min-w-0 flex-col gap-[5.5rem]">
+				{card?.artwork?.asset && (
+					<CardViewer
+						source={card.artwork.asset}
+						alt={`${bird.commonName} card, edition ${card.edition}`}
+						lqip={card.artwork.asset.lqip}
+						aspectRatio={card.artwork.asset.aspectRatio}
+						size="large"
+					/>
+				)}
+
+				{bird.funFacts && bird.funFacts.length > 0 && (
+					<section aria-labelledby="facts-heading" class="flex flex-col gap-7">
+						<div class="flex items-center gap-3">
+							<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">01</span>
+							<span class="h-0.5 w-[1.625rem] bg-beak-600" aria-hidden="true" />
+							<h2
+								id="facts-heading"
+								class="text-13 font-semibold uppercase tracking-eyebrow-wide text-ink-faint"
+							>
+								Three things you might not know
+							</h2>
+						</div>
+						<div class="flex flex-col gap-6 sm:flex-row">
+							{bird.funFacts.map((fact, n) => (
+								<div class="flex flex-1 flex-col gap-3 border-t-2 border-beak-600 pt-5">
+									<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">
+										{String(n + 1).padStart(2, '0')}
+									</span>
+									<p class="text-pretty text-17 leading-relaxed">{fact}</p>
+								</div>
+							))}
+						</div>
+					</section>
+				)}
+
+				{bird.photos && bird.photos.length > 0 && (
+					<PhotoStrip photos={bird.photos} name={bird.commonName} />
+				)}
+
+				<AdditionalInfo />
+
+				{links.length > 0 && (
+					<div class="flex flex-wrap items-center justify-between gap-6">
+						<span class="text-17 font-semibold">Learn about the {bird.commonName} from</span>
+						<div class="flex flex-wrap gap-3">
+							{links.map((l) => (
+								<a
+									href={l.href}
+									rel="noopener"
+									target="_blank"
+									class="rounded-full border border-gray-200 px-5 py-3 text-15 font-semibold no-underline"
+								>
+									{l.label}
+								</a>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
+
+		</div>
+
+		<BirdNav prev={prev} next={next} />
+	</main>
+
+	<Footer />
+
+	<Modal id="rarity-modal" title="How rarity works">
+		<h2 class="text-30 font-black tracking-tightest">How rarity works</h2>
+		<p class="mt-4 max-w-[44rem] text-17 leading-relaxed text-ink-dim">
+			Rarity caps how many copies of a card can ever exist in one edition. It is a blend of the
+			bird's conservation status, how likely you are to actually spot one, and the Birdables
+			Scale of Majesticness.
+		</p>
+		<dl class="mt-8">
+			{tiers.map((tier) => (
+				<div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-rule py-4">
+					<dt class="w-[6.5rem]">
+						<Stars value={tier.level ?? 1} size={14} gap={2} />
+					</dt>
+					<dd class="flex-1 text-15 text-ink-dim">{tier.label}</dd>
+					<dd class="text-15 font-semibold tabular-nums">
+						{tier.maxPhysical?.toLocaleString('en-US')} physical
+					</dd>
+					<dd class="w-24 text-right text-15 tabular-nums text-ink-dim">
+						{tier.maxDigital} digital
+					</dd>
+				</div>
+			))}
+			<div class="border-t border-rule"></div>
+		</dl>
+	</Modal>
+</BaseLayout>

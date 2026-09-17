@@ -1,0 +1,195 @@
+---
+import Stars from '~/components/ui/Stars.astro';
+import Button from '~/components/ui/Button.astro';
+import CardArt from '~/components/CardArt.astro';
+import { formatCount } from '~/lib/utils';
+import type { BirdBySlugQueryResult, RarityTiersQueryResult } from '~/lib/sanity.types';
+
+interface Props {
+	bird: NonNullable<BirdBySlugQueryResult>;
+	tiers: RarityTiersQueryResult;
+}
+const { bird, tiers } = Astro.props;
+
+const card = bird.cards?.[0];
+const tier = tiers.find((t) => t.level === card?.rarity);
+const size = bird.sizeRange;
+
+const range = (min?: number | null, max?: number | null, unit = 'cm') =>
+	min && max ? `${min}–${max} ${unit}` : min ? `${min} ${unit}` : null;
+
+/** Only rows with a value are rendered — a blank row reads as a broken page. */
+const cardRows = [
+	['Edition cap', tier?.maxPhysical ? `${formatCount(tier.maxPhysical)} physical` : null],
+	['Digital cap', tier?.maxDigital ? String(tier.maxDigital) : null],
+	['Scans', card?.qrScans != null ? formatCount(card.qrScans) : null],
+	['Accent', card?.accentColor]
+] as const;
+
+const birdRows = [
+	['Family', bird.family],
+	['Order', bird.order],
+	['Range', bird.region?.join(', ')],
+	['Length', range(size?.lengthMin, size?.lengthMax)],
+	['Wingspan', range(size?.wingspanMin, size?.wingspanMax)],
+	['Weight', bird.weight],
+	['Lifespan', bird.lifespan],
+	['Clutch', bird.clutch],
+	['Diet', bird.diet],
+	['Nest', bird.nest],
+	['Migration', bird.migration],
+	['Population', bird.population],
+	['Status', bird.conservationStatus],
+	['Often confused with', bird.similarSpecies]
+] as const;
+
+const filled = <T extends readonly (readonly [string, unknown])[]>(rows: T) =>
+	rows.filter(([, v]) => v != null && v !== '') as unknown as [string, string][];
+---
+
+<aside class="rail" data-spec-rail aria-label="Specifications">
+	<!-- Slides in once the hero card has scrolled away, so you always know
+	     which card the numbers belong to. -->
+	<div class="rail-card" data-rail-card>
+		{
+			card?.artwork?.asset && (
+				<div class="rail-thumb">
+					<CardArt
+						source={card.artwork.asset}
+						alt=""
+						width={64}
+						aspectRatio={card.artwork.asset.aspectRatio}
+						class="card-radius h-auto w-full drop-shadow-card"
+					/>
+				</div>
+			)
+		}
+		<div class="flex flex-col gap-0.5">
+			<span class="text-15 font-semibold">{card?.smallName} {card?.bigName}</span>
+			<span class="text-13 text-ink-faint">Edition {card?.edition}</span>
+		</div>
+	</div>
+
+	<div class="flex items-center justify-between">
+		<span class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">Rarity</span>
+		<div class="flex items-center gap-2">
+			<Stars value={card?.rarity ?? 1} size={15} gap={3} />
+			<button type="button" class="whats-this" data-modal-open="rarity-modal">
+				(What’s this?)
+			</button>
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-2.5">
+		{card?.openseaUrl && <Button href={card.openseaUrl}>Buy the digital card</Button>}
+		<Button href="/about#rarity" variant="ghost">Physical — closed</Button>
+	</div>
+
+	{
+		[
+			['The card', filled(cardRows)],
+			['The bird', filled(birdRows)]
+		].map(([label, rows]) =>
+			(rows as [string, string][]).length ? (
+				<div>
+					<span class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+						{label}
+					</span>
+					<dl class="mt-1">
+						{(rows as [string, string][]).map(([k, v]) => (
+							<div class="flex items-baseline justify-between gap-4 border-t border-rule py-2.5">
+								<dt class="text-12 font-semibold uppercase tracking-eyebrow text-ink-faint">
+									{k}
+								</dt>
+								<dd class="max-w-[10.625rem] text-right text-15 font-semibold">{v}</dd>
+							</div>
+						))}
+						<div class="border-t border-rule" />
+					</dl>
+				</div>
+			) : null
+		)
+	}
+</aside>
+
+<style>
+	.rail {
+		position: sticky;
+		top: 1.5rem;
+		display: flex;
+		/* Fills the left column so it lines up with the paragraph above it. */
+		width: 100%;
+		flex-shrink: 0;
+		flex-direction: column;
+		gap: 1.125rem;
+		border-radius: 1.75rem;
+		border: 1px solid var(--rule);
+		background: var(--surface);
+		padding: 1.375rem;
+		box-shadow: var(--shadow-pop);
+	}
+	.rail-card {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		align-items: center;
+		gap: 0.875rem;
+		overflow: hidden;
+		/* Collapsed until the hero card leaves the viewport. */
+		grid-template-rows: 0fr;
+		opacity: 0;
+		transition: grid-template-rows 260ms ease, opacity 200ms ease, padding 260ms ease;
+		padding-bottom: 0;
+	}
+	.rail-card > * {
+		min-height: 0;
+	}
+	.rail[data-pinned] .rail-card {
+		grid-template-rows: 1fr;
+		opacity: 1;
+		padding-bottom: 1.125rem;
+		border-bottom: 1px solid var(--rule);
+	}
+	.rail-thumb {
+		display: flex;
+		width: 4rem;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+		border-radius: 0.5rem;
+		background: var(--color-gray-blue);
+		padding: 0.25rem;
+	}
+
+	.whats-this {
+		border: 0;
+		cursor: pointer;
+		background: none;
+		padding: 0;
+		font: inherit;
+		font-size: var(--text-12);
+		color: var(--ink-dim);
+		text-decoration: underline;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.rail-card {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	// The rail gains the card thumbnail once the hero's card is out of view.
+	const rail = document.querySelector<HTMLElement>('[data-spec-rail]');
+	// The viewer's attribute is `data-card-viewer-three`; `[data-card-viewer]`
+	// is an exact match, not a prefix, so this silently observed nothing and the
+	// card thumbnail never slid into the rail.
+	const hero = document.querySelector<HTMLElement>('[data-card-viewer-three]');
+
+	if (rail && hero) {
+		new IntersectionObserver(
+			([entry]) => rail.toggleAttribute('data-pinned', !entry.isIntersecting),
+			{ rootMargin: '-120px 0px 0px 0px' }
+		).observe(hero);
+	}
+</script>

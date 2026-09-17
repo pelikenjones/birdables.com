@@ -1,0 +1,59 @@
+---
+/**
+ * The three explainers the v1 bird page carried. <details> gives keyboard
+ * support, screen-reader semantics and find-in-page for free.
+ */
+const ENTRIES = [
+	{
+		q: 'The scoop on the physical cards',
+		a: 'They are 6.4cm (2.5 in) × 8.9cm (3.5 in) — standard trading card size, so they fit your existing sleeves. Printed on high quality 100% recycled paper with a cross-hatch texture, sturdy with a slight bend. Physical cards are no longer available for purchase.',
+		open: true
+	},
+	{
+		q: 'What’s the digital version?',
+		a: 'An NFT you keep in your wallet, verifiable on the Polygon blockchain, which comes with the hi-res artwork. Digital cards are scarcer than physical ones.'
+	},
+	{
+		q: 'How do Birdables help birds?',
+		a: 'A portion of profits goes to conservation organisations like the Cornell Lab of Ornithology, eBird and Audubon. Nothing is printed on virgin paper, so no trees come down for a Birdable, and the digital cards mint on Polygon, which settles by proof-of-stake.'
+	}
+];
+---
+
+<section aria-labelledby="info-heading" class="flex flex-col gap-5">
+	<div class="flex items-center gap-3">
+		<span class="text-13 font-black tracking-eyebrow-wide text-accent-ink">03</span>
+		<span class="h-0.5 w-[1.625rem] bg-beak-600" aria-hidden="true"></span>
+		<h2 id="info-heading" class="text-13 font-semibold uppercase tracking-eyebrow-wide text-ink-faint">
+			Additional information
+		</h2>
+	</div>
+
+	<div>
+		{
+			ENTRIES.map((entry) => (
+				<details class="info border-t border-rule" open={entry.open}>
+					<summary class="flex cursor-pointer list-none items-center justify-between gap-6 py-[1.375rem]">
+						<span class="text-18 font-semibold sm:text-19">{entry.q}</span>
+						<span class="mark inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-rule">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path class="v" d="M12 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+								<path d="M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+							</svg>
+						</span>
+					</summary>
+					<p class="mb-[1.375rem] max-w-[42.5rem] text-16 leading-relaxed text-ink-dim">{entry.a}</p>
+				</details>
+			))
+		}
+		<div class="border-t border-rule"></div>
+	</div>
+</section>
+
+<style>
+	.info summary::-webkit-details-marker { display: none; }
+	.info summary .mark { color: var(--ink-faint); }
+	.info[open] summary .mark { color: var(--accent-ink); border-color: var(--accent-ink); }
+	.info[open] summary .v { opacity: 0; }
+	.info summary .v { transition: opacity 120ms ease; }
+</style>

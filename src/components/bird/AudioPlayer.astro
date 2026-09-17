@@ -1,0 +1,130 @@
+---
+/**
+ * Call playback. The recording is served from Sanity, never fetched from
+ * xeno-canto at runtime — their terms discourage repeated automated requests.
+ *
+ * The credit line is NOT decoration: every recording carries its own Creative
+ * Commons licence, and displaying the recordist and licence is the condition of
+ * use. If there is no credit, there is no player.
+ */
+interface Props {
+	url: string;
+	title?: string | null;
+	durationSeconds?: number | null;
+	author?: string | null;
+	license?: string | null;
+	sourceUrl?: string | null;
+	sourceId?: string | null;
+	source?: string | null;
+}
+const { url, title, durationSeconds, author, license, sourceUrl, sourceId, source } = Astro.props;
+
+const SOURCE_LABEL: Record<string, string> = {
+	'xeno-canto': 'xeno-canto',
+	wikimedia: 'Wikimedia Commons'
+};
+const sourceLabel = SOURCE_LABEL[source ?? ''] ?? 'source';
+
+const mmss = (s?: number | null) =>
+	s ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : null;
+
+// A fixed, hand-tuned waveform: the real one would need decoding the audio.
+const BARS = [7, 13, 21, 11, 26, 17, 9, 23, 15, 26, 10, 18, 7, 24, 12, 20, 9, 25, 16, 11, 22, 13, 26, 10, 19, 8, 23, 14];
+---
+
+<figure class="m-0 flex items-center gap-6 rounded-3xl bg-panel px-[1.875rem] py-[1.625rem]">
+	<button
+		type="button"
+		class="flex size-14 shrink-0 items-center justify-center rounded-full bg-ink text-surface"
+		data-audio-play
+		aria-label={`Play the ${title ?? 'call'}`}
+	>
+		<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" data-icon-play>
+			<path d="M8 5l11 7-11 7z" fill="currentColor"></path>
+		</svg>
+		<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" data-icon-pause style="display:none">
+			<path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"></path>
+		</svg>
+	</button>
+
+	<div class="flex flex-1 flex-col gap-2.5">
+		<div class="flex h-7 items-center gap-[3px]" aria-hidden="true">
+			{
+				/* The waveform doubles as the progress bar: bars light up as the
+				   recording plays, rather than sitting there decoratively. */
+				BARS.map((h) => (
+					<span class="w-[3px] rounded-sm bg-beak-600 opacity-25 transition-opacity duration-150" style={`height:${h}px`} data-bar />
+				))
+			}
+		</div>
+		<figcaption class="flex flex-wrap items-center justify-between gap-2">
+			<span class="text-13 tabular-nums text-ink-dim">
+				{title ?? 'Call'} · <span data-audio-time>0:00</span>
+				{mmss(durationSeconds) && ` / ${mmss(durationSeconds)}`}
+			</span>
+			{
+				/* Attribution is a licence obligation for borrowed recordings only.
+				   A self-recorded file has no credit block, and owes nothing. */
+				author && license && (
+					<span class="text-12 text-ink-faint">
+						{sourceId && `${sourceId} · `}{author} · {license}
+						{sourceUrl && (
+							<>
+								{' · '}
+								<a href={sourceUrl} rel="noopener" target="_blank" class="underline">
+									{sourceLabel}
+								</a>
+							</>
+						)}
+					</span>
+				)
+			}
+		</figcaption>
+	</div>
+
+	<audio src={url} preload="none" data-audio></audio>
+</figure>
+
+<script>
+	const button = document.querySelector<HTMLButtonElement>('[data-audio-play]');
+	const audio = document.querySelector<HTMLAudioElement>('[data-audio]');
+	const play = document.querySelector<SVGElement>('[data-icon-play]');
+	const pause = document.querySelector<SVGElement>('[data-icon-pause]');
+
+	if (button && audio && play && pause) {
+		const bars = Array.from(document.querySelectorAll<HTMLElement>('[data-bar]'));
+		const time = document.querySelector<HTMLElement>('[data-audio-time]');
+		const mmss = (s: number) =>
+			`${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+		const progress = () => {
+			const total = audio.duration;
+			if (!Number.isFinite(total) || total <= 0) return;
+			const played = audio.currentTime / total;
+			bars.forEach((bar, i) => {
+				bar.style.opacity = i / bars.length < played ? '1' : '0.25';
+			});
+			if (time) time.textContent = mmss(audio.currentTime);
+		};
+		audio.addEventListener('timeupdate', progress);
+
+		const sync = () => {
+			const on = !audio.paused;
+			play.style.display = on ? 'none' : '';
+			pause.style.display = on ? '' : 'none';
+			button.setAttribute('aria-label', on ? 'Pause' : 'Play the call');
+		};
+
+		button.addEventListener('click', () => {
+			if (audio.paused) audio.play().catch(() => {});
+			else audio.pause();
+		});
+		audio.addEventListener('play', sync);
+		audio.addEventListener('pause', sync);
+		audio.addEventListener('ended', () => {
+			sync();
+			audio.currentTime = 0;
+			progress();
+		});
+	}
+</script>
