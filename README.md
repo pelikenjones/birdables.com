@@ -9,6 +9,7 @@ Collectible bird cards. Astro static frontend, Sanity content, deployed on Verce
 studio/           Sanity Studio, deployed separately
 design/canvas/    The signed-off design spec. Read it, don't run it.
 _legacy/          The v1 SvelteKit app. Porting reference only; deleted before merge.
+docs/             Open decisions — hosting.md is Vercel vs Cloudflare.
 ```
 
 ## Getting started

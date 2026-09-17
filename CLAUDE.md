@@ -10,6 +10,7 @@ design/canvas/    The signed-off design spec. Read it; don't run it.
 _legacy/          v1 SvelteKit source. Porting reference only — delete before merge.
 scripts/          One-off migration and media scripts
 content/blog/     Markdown posts, imported into Sanity by scripts/import-posts.mjs
+docs/             Open decisions worth not re-researching
 ```
 
 ```sh
@@ -205,10 +206,16 @@ and `:focus-visible` present. Not yet driven by hand in a browser.
 
 - **Keyboard pass by hand** — the static audit is clean (see above) but nobody has
   actually tabbed through the drawer, accordion, modals and card viewer.
-- **Never deployed.** Vercel needs `SANITY_WRITE_TOKEN`, `MEDIA_FETCH_SECRET` and
-  Resend's keys; a deployed Studio additionally needs its own two (above). Sanity
-  CORS is done — `https://*.vercel.app` was added 2026-09-17, alongside
-  `localhost:3333`, `localhost:4321` and `https://www.birdables.com`.
+- **Never deployed, and the platform is undecided.** Vercel is wired and ready
+  (`@astrojs/vercel`, `.vercel/project.json` links a project named `birdables`);
+  Cloudflare is under consideration. **`docs/hosting.md` has the whole analysis** —
+  read it before touching the adapter, because the Cloudflare image service
+  defaults to something this site does not want and would silently re-ship
+  unoptimized images.
+  Vercel needs `SANITY_WRITE_TOKEN`, `MEDIA_FETCH_SECRET` and Resend's keys set;
+  a deployed Studio additionally needs its own two (above). Sanity CORS is done —
+  `https://*.vercel.app` was added 2026-09-17, alongside `localhost:3333`,
+  `localhost:4321` and `https://www.birdables.com`.
 - **`_legacy/` still present** — delete once nothing else needs porting.
 - **Bingo / life list** deferred by Ken. eBird has no OAuth and no third-party access
   to a user's life list; the buildable shapes are manual ticking and a CSV import,
